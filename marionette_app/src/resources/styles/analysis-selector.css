@@ -1,0 +1,434 @@
+@import url("https://www.nerdfonts.com/assets/css/combo.css");
+@import url("https://fonts.googleapis.com/css?family=JetBrains Mono");
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@100&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Coustard&display=swap');
+
+@font-face {
+    font-family: 'NerdFontsSymbols Nerd Font';
+    src: url("resources/fonts/Symbols-2048-em Nerd Font Complete.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal
+}
+
+@font-face {
+    font-family: FontAwesome;
+    font-weight: normal;
+    font-style: normal;
+    src: url('resources/fonts/fontawesome.woff2');
+}
+
+@font-face {
+    font-family: Mfizz;
+    src: url('resources/fonts/mfixx.woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: Devicons;
+    src: url('resources/fonts/devopicons.woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: file-icons;
+    src: url('resources/fonts/file-icons.woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: Octicons Regular;
+    src: url('resources/fonts/octicons.woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+
+.material-symbols-outlined {
+    font-variation-settings:
+            'FILL' 1,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 48
+}
+
+/* disabling FILL in a html element using the class would be as follows
+<div class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;"></div>
+ */
+
+pre {
+    visibility: hidden;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: #1c1c1c;
+    overflow: hidden;
+}
+
+body {
+    margin: 0;
+}
+
+#main {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background: #1c1c1c;
+    color: #ffffff;
+    font-family: 'Roboto Slab', serif;
+    font-size: 1.5em;
+    padding: 0.5em;
+    height: 50px;
+    margin: 0;
+
+    border-bottom: 1px solid #484848;
+}
+
+#page_title {
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.5em;
+    margin: 0;
+    padding: 0;
+}
+
+#underline_important_text {
+    text-shadow: 0 0 5px rgb(153, 0, 255);
+    text-underline-offset: 4px;
+    text-decoration: underline rgb(153, 0, 255);
+    text-decoration-thickness: 1px;
+}
+
+#tab_container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background: #1c1c1c;
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
+    margin: 0;
+}
+
+.tab_button {
+    background: #1c1c1c;
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.5em;
+    padding: 10px;
+    margin: 0;
+    border: none;
+    outline: none;
+    cursor: pointer;
+}
+
+.bottom_bar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background: #1c1c1c;
+
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
+
+    bottom: 0;
+    position: fixed;
+    width: 100%;
+    height: 50px;
+
+    /* border */
+    border-top: 1px solid #484848;
+}
+
+.bottom_button {
+    background: #1c1c1c;
+    color: #c5c5c5;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75em;
+
+    border: 1px solid #484848;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+
+    margin-left: 10px;
+    margin-right: 10px;
+
+    height: 30px;
+    width: min-content;
+    padding-left: 20px;
+    padding-right: 20px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.5s ease;
+}
+
+.bottom_button:hover {
+    background: #1c1c1c;
+    border: 1px solid rgba(153, 0, 255, 0.7);
+    box-shadow: 0 0 25px rgba(153, 0, 255, 0.4);
+}
+
+.input_box {
+    background: #1c1c1c;
+    color: #c5c5c5;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75em;
+    padding: 10px;
+    outline: none;
+
+    margin-left: 10px;
+    margin-right: 10px;
+
+    border-radius: 5px;
+    border: 1px solid #484848;
+
+    width: 100%;
+}
+
+.file_explorer_top_bar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background: #1c1c1c;
+
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
+
+    width: 100%;
+    height: 30px;
+
+    border-bottom: 1px solid #484848;
+}
+
+.file_explorer_path {
+    background: #1c1c1c;
+    color: #fff6d0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75em;
+    padding: 5px;
+    outline: none;
+    border: none;
+
+    width: 100%;
+}
+
+.file_explorer_button {
+    background: #1c1c1c;
+    fill: #c5c5c5;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75em;
+
+    border: 1px solid #484848;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+
+    margin-left: 2px;
+    margin-right: 2px;
+
+    height: 20px;
+    width: min-content;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.5s ease;
+}
+
+.file_explorer_button:hover {
+    background: #1c1c1c;
+    border: 1px solid rgba(153, 0, 255, 0.7);
+    box-shadow: 0 0 25px rgba(153, 0, 255, 0.4);
+}
+
+.file_explorer_button:hover #svg-data {
+    fill: rgba(153, 0, 255, 0.7);
+}
+
+.file_explorer_container {
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    background: #1c1c1c;
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
+    width: 100%;
+    height: calc(100vh - 130px);
+    overflow-y: scroll;
+}
+
+#file_entry {
+    /* File Name    File Type   File Size */
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background: #1c1c1c;
+    color: #bebebe;
+    font-family: 'NerdFontsSymbols Nerd Font', monospace;
+    font-size: 0.75em;
+    width: 100%;
+    height: 25px;
+    padding-left: 5px;
+    padding-right: 25px;
+    border-bottom: 1px solid #484848;
+    display: grid;
+
+    /* truncate span elements if they are too long */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    grid-template-rows: 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-column-gap: 10px;
+    grid-template-areas: "file_icon file_name file_size file_date";
+}
+
+#file_entry:hover {
+    background: #222222;
+}
+
+#file_entry > span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+#file_entry > span#icon {
+    /* google material icon fill */
+    color: #bebebe;
+}
+
+.projects_grid_container {
+    /* each element must be exactly 10px all the time apart even if they are on the next row */
+    display: grid;;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 100px));
+    grid-auto-rows: 100px;
+    grid-gap: 10px;
+    padding: 10px;
+    background: #1c1c1c;
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
+    margin: 0;
+    width: 100%;
+
+    overflow-y: scroll;
+    height: calc(100vh - 120px);
+}
+
+.project_container {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    background: #1c1c1c;
+    color: #ffffff;
+    font-family: 'Jet   Brains Mono', monospace;
+    padding: 0;
+
+    width: 100px;
+    height: 100px;
+
+    border-radius: 10px;
+    border: 1px solid #484848;
+    cursor: pointer;
+    transition: color 0.1s ease, text-shadow 0.1s ease, border 0.1s ease, box-shadow 0.1s ease;
+
+    margin: 10px;
+}
+
+.project_container:hover {
+    /* fade in the colors over time */
+    border: 1px solid rgb(153, 0, 255);
+    box-shadow: 0 0 15px rgba(153, 0, 255, 0.4);
+}
+
+.project_container:hover #project_name {
+    color: rgb(153, 0, 255);
+    text-shadow: 0 0 5px rgb(153, 0, 255);
+}
+
+.project_container:hover .project_icon {
+    color: rgb(153, 0, 255);
+    text-shadow: 0 0 5px rgb(153, 0, 255);
+}
+
+.project_icon {
+    width: 60px;
+    height: 60px;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    font-family: "NerdFontsSymbols Nerd Font", monospace;
+    text-align: center;
+    font-size: 2em;
+    color: #c5c5c5;
+    transition: color 0.1s ease, text-shadow 0.1s ease, border 0.1s ease, box-shadow 0.1s ease;
+}
+
+#project_name {
+    color: #c5c5c5;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.65em;
+    margin-bottom: 10px;
+    padding: 0;
+    transition: color 0.1s ease, text-shadow 0.1s ease, border 0.1s ease, box-shadow 0.1s ease;
+}
+
+.repeating_diagonal_lines {
+    background-image: repeating-linear-gradient(
+            135deg,
+            #1c1c1c,
+            #1c1c1c 10px,
+            #2c2c2c 10px,
+            #2c2c2c 20px
+    );
+    background-size: 28px 28px;
+    width: 100%;
+    height: 100%;
+
+    animation: slide 150s linear infinite;
+}
+
+@keyframes slide {
+    from {
+        background-position: 0 0;
+    }
+    to {
+        background-position: 100% 100%;
+    }
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1c1c1c;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #484848;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #7a7a7a;
+}

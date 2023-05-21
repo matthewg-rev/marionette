@@ -1,0 +1,138 @@
+@import url("https://www.nerdfonts.com/assets/css/combo.css");
+@import url("https://fonts.googleapis.com/css?family=JetBrains Mono");
+
+@font-face {
+    font-family: 'NerdFontsSymbols Nerd Font';
+    src: url("resources/fonts/Symbols-2048-em Nerd Font Complete.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal
+}
+
+pre {
+    visibility: hidden;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: #1c1c1c;
+    overflow: hidden;
+}
+
+#main {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.msgbox_icon_title {
+    width: 100%;
+    height: fit-content;
+    padding-top: 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    align-items: center;
+    text-align: center;
+}
+
+.msgbox_icon_title .msgbox_icon {
+    width: 30px;
+    height: fit-content;
+    font-family: "NerdFontsSymbols Nerd Font", monospace;
+    font-size: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding-left: 30px;
+    padding-right: 20px;
+    z-index: 1;
+}
+
+.msgbox_icon_title .msgbox_icon_fill {
+    width: 30px;
+    height: fit-content;
+    font-family: "NerdFontsSymbols Nerd Font", monospace;
+    font-size: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding-left: 30px;
+    padding-right: 20px;
+    color: #bebebe;
+    z-index: -1;
+}
+
+.msgbox_icon_title .msgbox_title {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    color: #bebebe;
+    text-align: left;
+}
+
+.msgbox_message {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    color: #bebebe;
+    margin-bottom: 10px;
+    padding-left: 25px;
+    padding-right: 25px;
+
+    width: 100%;
+    height: fit-content;
+
+    -webkit-box-decoration-break: clone;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    text-align: start;
+    line-height: 0;
+}
+
+.button_row {
+    width: 100%;
+    height: fit-content;
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    align-items: center;
+    text-align: center;
+
+    padding-bottom: 15px;
+}
+
+.msgbox_button {
+    background: #1c1c1c;
+    color: #bebebe;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+
+    border: 1px solid #585858;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+
+    margin-top: 10px;
+    margin-left: 15px;
+    margin-right: 2px;
+    padding-left: 25px;
+    padding-right: 25px;
+
+    height: 20px;
+    width: min-content;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.5s ease;
+}
+
+.msgbox_button:hover {
+    background: #1c1c1c;
+    border: 1px solid rgba(153, 0, 255, 0.7);
+    box-shadow: 0 0 25px rgba(153, 0, 255, 0.4);
+}

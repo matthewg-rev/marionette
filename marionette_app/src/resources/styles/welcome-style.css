@@ -1,0 +1,228 @@
+@import url("https://www.nerdfonts.com/assets/css/combo.css");
+@import url("https://fonts.googleapis.com/css?family=JetBrains Mono");
+
+pre {
+    visibility: hidden;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: #1c1c1c;
+    overflow: hidden;
+}
+
+#main {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    height: fit-content;
+    margin-top: 25px;
+    margin-bottom: 25px;
+    justify-content: center;
+    align-items: center;
+    align-self: center;
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+    height: fit-content;
+    margin: 0;
+    justify-content: center;
+    align-items: center;
+    align-self: center;
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    width: 100%;
+    height: fit-content;
+    margin: 0;
+    justify-content: center;
+    align-items: flex-start;
+    align-self: center;
+}
+
+.tool-button-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-left: 10px;
+    margin-right: 10px;
+    transition: transform 0.25s ease;
+}
+
+.tool-button-container:hover #button_description {
+    text-shadow: 0 0 5px rgb(153, 0, 255);
+}
+
+.tool-button-icon {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 5px;
+    border-radius: 10px;
+    background: #2d2d2d;
+    box-shadow: 0 0 10px #000;
+    cursor: pointer;
+
+    transition: transform 0.25s ease;
+}
+
+.tool-button-icon:hover {
+    background: #252525;
+
+    transform: scale(1.025);
+
+    border: 1px solid rgba(153, 0, 255, 0.7);
+
+    /* change glow */
+    box-shadow: 0 0 25px rgba(153, 0, 255, 0.4);
+}
+
+.tool-button-icon:hover #svg-data {
+    fill: rgb(153, 0, 255);
+}
+
+#svg-container {
+    align-items: center;
+    display: flex;
+    height: 100%;
+    justify-content: center;
+}
+
+#svg-contained {
+    overflow-clip-margin: content-box;
+    overflow: hidden;
+}
+
+.git-release-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: fit-content;
+    height: 64px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    border-radius: 10px;
+    background: #2d2d2d;
+    box-shadow: 0 0 5px #000;
+    cursor: pointer;
+    background-size: contain;
+    transition: transform 0.18s ease;
+}
+
+.git-release-container:hover {
+    background: #252525;
+
+    transform: scale(1.025);
+
+    border: 1px solid rgba(153, 0, 255, 0.7);
+
+    /* change glow */
+    box-shadow: 0 0 25px rgba(153, 0, 255, 0.4), 0 0.5em 0.5em -0.4em;
+}
+
+.git-release-container:hover #svg-data {
+    fill: rgb(153, 0, 255);
+}
+
+.git-release-container:hover #release-title {
+    text-shadow: 0 0 3px rgb(153, 0, 255);
+}
+
+.git-release-container:hover #release-description {
+    text-shadow: 0 0 3px rgb(153, 0, 255);
+}
+
+#svg-data {
+    fill: #ffffff;
+}
+
+#descriptor, #button_description {
+    font-family: 'JetBrains Mono', serif;
+    font-size: 0.8em;
+    font-weight: 100;
+    color: #c9c9c9;
+    padding: 0;
+    text-align: center;
+    margin: 0 0 0;
+}
+
+#release-title {
+    font-family: 'JetBrains Mono', serif;
+    font-size: 0.8em;
+    font-weight: 100;
+    color: #e5e5e5;
+    padding: 0;
+    text-align: center;
+    margin: 0 0 0;
+    transition: transform 0.25s ease;
+    text-shadow: 0 0 5px rgb(0, 0, 0);
+}
+
+#release-description {
+    font-family: 'JetBrains Mono', serif;
+    font-size: 0.7em;
+    font-weight: 100;
+    color: #c9c9c9;
+    padding: 0;
+    text-align: center;
+    margin: 0 0 0;
+    transition: transform 0.25s ease;
+    text-shadow: 0 0 5px rgb(0, 0, 0);
+}
+
+#version {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'JetBrains Mono', serif;
+    font-size: 0.7em;
+    font-weight: 100;
+    color: #c9c9c9;
+    padding: 0;
+    text-align: center;
+    margin: 0 0 0;
+}
+
+#welcome_message {
+    font-family: 'JetBrains Mono', serif;
+    font-size: 2em;
+    font-weight: 100;
+    color: #fff;
+    padding: 0;
+    text-align: center;
+    margin: 5% 0 0;
+}
+
+#underline_important_text {
+    text-shadow: 0 0 5px rgb(153, 0, 255);
+    text-underline-offset: 4px;
+    text-decoration: underline rgb(153, 0, 255);
+    text-decoration-thickness: 1px;
+}
+
+#logo-svg {
+    position: absolute;
+}
