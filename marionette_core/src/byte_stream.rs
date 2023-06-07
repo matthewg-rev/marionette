@@ -1,7 +1,39 @@
 // Purpose: serve as a byte stream utility for marionette
 // src\byte_stream
 
-use crate::exported_types::{DisassemblerError, DisassemblerErrorType};
+use bincode::{Decode, Encode};
+use bincode::error::DecodeError;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ByteStreamErrorType {
+    HistoryFallbackFailure,
+    OutOfBounds,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct ByteStreamError {
+    pub address: u64,
+    pub description: String,
+    pub error_type: ByteStreamErrorType
+}
+
+impl ByteStreamError {
+    pub fn new(stream: &mut ByteStream, description: String, error_type: ByteStreamErrorType) -> ByteStreamError {
+        let address = stream.current_address();
+        ByteStreamError {
+            address,
+            description,
+            error_type
+        }
+    }
+}
+
+impl std::fmt::Display for ByteStreamError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "0x{:x}: {}", self.address, self.description)
+    }
+}
 
 #[derive(Debug)]
 /// A byte stream that reads from a vector of bytes.
@@ -51,19 +83,18 @@ impl ByteStream {
     /// assert_eq!(byte_stream.read_u8().unwrap(), 0x00);
     /// ```
     /// # Errors
-    /// Returns a `DisassemblerError` if the index is out of bounds.
+    /// Returns a `ByteStreamError` if the index is out of bounds.
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x00, 0x01, 0x02];
     /// let mut byte_stream = ByteStream::new(bytes);
     /// while let Ok(_) = byte_stream.read_u8() {}
-    /// assert_eq!(byte_stream.read_u8().unwrap_err().error_type, DisassemblerErrorType::ByteStreamError);
+    /// assert_eq!(byte_stream.read_u8().unwrap_err().error_type, ByteStreamErrorType::OutOfBounds);
     /// ```
-    pub fn read_u8(&mut self) -> Result<u8, DisassemblerError> {
+    pub fn read_u8(&mut self) -> Result<u8, ByteStreamError> {
         if self.is_out_of_bounds(1) {
-            return Err(DisassemblerError::new(self.index as u64, "index out of bounds".to_string(), DisassemblerErrorType::ByteStreamError));
+            return Err(ByteStreamError::new(self, "index out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
         }
 
         let result = self.bytes[self.index];
@@ -81,18 +112,17 @@ impl ByteStream {
     /// assert_eq!(byte_stream.read_u16().unwrap(), 256);
     /// ```
     /// # Errors
-    /// Returns a `DisassemblerError` if the index is out of bounds.
+    /// Returns a `ByteStreamError` if the index is out of bounds.
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x00];
     /// let mut byte_stream = ByteStream::new(bytes);
-    /// assert_eq!(byte_stream.read_u16().unwrap_err().error_type, DisassemblerErrorType::ByteStreamError);
+    /// assert_eq!(byte_stream.read_u16().unwrap_err().error_type, ByteStreamErrorType::ByteStreamError);
     /// ```
-    pub fn read_u16(&mut self) -> Result<u16, DisassemblerError> {
+    pub fn read_u16(&mut self) -> Result<u16, ByteStreamError> {
         if self.is_out_of_bounds(2) {
-            return Err(DisassemblerError::new(self.index as u64, "index out of bounds".to_string(), DisassemblerErrorType::ByteStreamError));
+            return Err(ByteStreamError::new(self, "index out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
         }
 
         let result = u16::from_le_bytes([self.bytes[self.index], self.bytes[self.index + 1]]);
@@ -111,18 +141,17 @@ impl ByteStream {
     /// assert_eq!(byte_stream.read_u32().unwrap(), 50462976);
     /// ```
     /// # Errors
-    /// Returns a `DisassemblerError` if the index is out of bounds.
+    /// Returns a `ByteStreamError` if the index is out of bounds.
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x00, 0x01, 0x02];
     /// let mut byte_stream = ByteStream::new(bytes);
-    /// assert_eq!(byte_stream.read_u32().unwrap_err().error_type, DisassemblerErrorType::ByteStreamError);
+    /// assert_eq!(byte_stream.read_u32().unwrap_err().error_type, ByteStreamErrorType::ByteStreamError);
     /// ```
-    pub fn read_u32(&mut self) -> Result<u32, DisassemblerError> {
+    pub fn read_u32(&mut self) -> Result<u32, ByteStreamError> {
         if self.is_out_of_bounds(4) {
-            return Err(DisassemblerError::new(self.index as u64, "index out of bounds".to_string(), crate::exported_types::DisassemblerErrorType::ByteStreamError));
+            return Err(ByteStreamError::new(self, "index out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
         }
 
         let result = u32::from_le_bytes([self.bytes[self.index], self.bytes[self.index + 1], self.bytes[self.index + 2], self.bytes[self.index + 3]]);
@@ -141,18 +170,17 @@ impl ByteStream {
     /// assert_eq!(byte_stream.read_u64().unwrap(), 506097522914230528);
     /// ```
     /// # Errors
-    /// Returns a `DisassemblerError` if the index is out of bounds.
+    /// Returns a `ByteStreamError` if the index is out of bounds.
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x00, 0x01, 0x02, 0x03];
     /// let mut byte_stream = ByteStream::new(bytes);
-    /// assert_eq!(byte_stream.read_u64().unwrap_err().error_type, DisassemblerErrorType::ByteStreamError);
+    /// assert_eq!(byte_stream.read_u64().unwrap_err().error_type, ByteStreamErrorType::ByteStreamError);
     /// ```
-    pub fn read_u64(&mut self) -> Result<u64, DisassemblerError> {
+    pub fn read_u64(&mut self) -> Result<u64, ByteStreamError> {
         if self.is_out_of_bounds(8) {
-            return Err(DisassemblerError::new(self.index as u64, "index out of bounds".to_string(), DisassemblerErrorType::ByteStreamError));
+            return Err(ByteStreamError::new(self, "index out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
         }
 
         let result = u64::from_le_bytes([self.bytes[self.index], self.bytes[self.index + 1], self.bytes[self.index + 2], self.bytes[self.index + 3], self.bytes[self.index + 4], self.bytes[self.index + 5], self.bytes[self.index + 6], self.bytes[self.index + 7]]);
@@ -161,29 +189,67 @@ impl ByteStream {
         Ok(result)
     }
 
-    /// Consumes a signed 8-bit integer from the byte stream and returns it. (Little Endian)
+    /// Reads a 32-bit floating point number from the byte stream and returns it.
     /// # Examples
     /// ```
     /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    ///
+    /// let bytes = vec![0x00, 0x00, 0x80, 0x3F];
+    /// let mut byte_stream = ByteStream::new(bytes);
+    /// assert_eq!(byte_stream.read_f32().unwrap(), 1.0);
+    /// ```
+    pub fn read_f32(&mut self) -> Result<f32, ByteStreamError> {
+        if self.is_out_of_bounds(4) {
+            return Err(ByteStreamError::new(self, "index out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
+        }
+
+        let result = f32::from_le_bytes([self.bytes[self.index], self.bytes[self.index + 1], self.bytes[self.index + 2], self.bytes[self.index + 3]]);
+        self.index += 4;
+        self.history.push((self.index, 4));
+        Ok(result)
+    }
+
+    /// Reads a 64-bit floating point number from the byte stream and returns it.
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let bytes = vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0xF0, 0x3F];
+    /// let mut byte_stream = ByteStream::new(bytes);
+    /// assert_eq!(byte_stream.read_f64().unwrap(), 1.0);
+    /// ```
+    pub fn read_f64(&mut self) -> Result<f64, ByteStreamError> {
+        if self.is_out_of_bounds(8) {
+            return Err(ByteStreamError::new(self, "index out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
+        }
+
+        let result = f64::from_le_bytes([self.bytes[self.index], self.bytes[self.index + 1], self.bytes[self.index + 2], self.bytes[self.index + 3], self.bytes[self.index + 4], self.bytes[self.index + 5], self.bytes[self.index + 6], self.bytes[self.index + 7]]);
+        self.index += 8;
+        self.history.push((self.index, 8));
+        Ok(result)
+    }
+
+    /// Consumes a signed 8-bit integer from the byte stream and returns it. (Little Endian)
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x00];
     /// let mut byte_stream = ByteStream::new(bytes);
     /// assert_eq!(byte_stream.read_i8().unwrap(), 0);
     /// ```
     /// # Errors
-    /// Returns a `DisassemblerError` if the index is out of bounds.
+    /// Returns a `ByteStreamError` if the index is out of bounds.
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![];
     /// let mut byte_stream = ByteStream::new(bytes);
-    /// assert_eq!(byte_stream.read_i8().unwrap_err().error_type, DisassemblerErrorType::ByteStreamError);
+    /// assert_eq!(byte_stream.read_i8().unwrap_err().error_type, ByteStreamErrorType::ByteStreamError);
     /// ```
-    pub fn read_i8(&mut self) -> Result<i8, DisassemblerError> {
+    pub fn read_i8(&mut self) -> Result<i8, ByteStreamError> {
         if self.is_out_of_bounds(1) {
-            return Err(DisassemblerError::new(self.index as u64, "index out of bounds".to_string(), DisassemblerErrorType::ByteStreamError));
+            return Err(ByteStreamError::new(self, "index out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
         }
 
         let result = self.bytes[self.index] as i8;
@@ -195,26 +261,24 @@ impl ByteStream {
     /// Consumes a signed 16-bit integer from the byte stream and returns it. (Little Endian BA)
     /// # Examples
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x00, 0x01];
     /// let mut byte_stream = ByteStream::new(bytes);
     /// assert_eq!(byte_stream.read_i16().unwrap(), 256);
     /// ```
     /// # Errors
-    /// Returns a `DisassemblerError` if the index is out of bounds.
+    /// Returns a `ByteStreamError` if the index is out of bounds.
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x00];
     /// let mut byte_stream = ByteStream::new(bytes);
-    /// assert_eq!(byte_stream.read_i16().unwrap_err().error_type, DisassemblerErrorType::ByteStreamError);
+    /// assert_eq!(byte_stream.read_i16().unwrap_err().error_type, ByteStreamErrorType::ByteStreamError);
     /// ```
-    pub fn read_i16(&mut self) -> Result<i16, DisassemblerError> {
+    pub fn read_i16(&mut self) -> Result<i16, ByteStreamError> {
         if self.is_out_of_bounds(2) {
-            return Err(DisassemblerError::new(self.index as u64, "index out of bounds".to_string(), DisassemblerErrorType::ByteStreamError));
+            return Err(ByteStreamError::new(self, "index out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
         }
 
         let result = i16::from_le_bytes([self.bytes[self.index], self.bytes[self.index + 1]]);
@@ -226,26 +290,24 @@ impl ByteStream {
     /// Consumes a signed 32-bit integer from the byte stream and returns it. (Little Endian BADC)
     /// # Examples
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x00, 0x01, 0x02, 0x03];
     /// let mut byte_stream = ByteStream::new(bytes);
     /// assert_eq!(byte_stream.read_i32().unwrap(), 66051);
     /// ```
     /// # Errors
-    /// Returns a `DisassemblerError` if the index is out of bounds.
+    /// Returns a `ByteStreamError` if the index is out of bounds.
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x00, 0x01, 0x02];
     /// let mut byte_stream = ByteStream::new(bytes);
-    /// assert_eq!(byte_stream.read_i32().unwrap_err().error_type, DisassemblerErrorType::ByteStreamError);
+    /// assert_eq!(byte_stream.read_i32().unwrap_err().error_type, ByteStreamErrorType::ByteStreamError);
     /// ```
-    pub fn read_i32(&mut self) -> Result<i32, DisassemblerError> {
+    pub fn read_i32(&mut self) -> Result<i32, ByteStreamError> {
         if self.is_out_of_bounds(4) {
-            return Err(DisassemblerError::new(self.index as u64, "index out of bounds".to_string(), DisassemblerErrorType::ByteStreamError));
+            return Err(ByteStreamError::new(self, "index out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
         }
 
         let result = i32::from_le_bytes([self.bytes[self.index], self.bytes[self.index + 1], self.bytes[self.index + 2], self.bytes[self.index + 3]]);
@@ -257,26 +319,24 @@ impl ByteStream {
     /// Consumes a signed 64-bit integer from the byte stream and returns it. (Little Endian HGFEDCBA)
     /// # Examples
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x6, 0x07];
     /// let mut byte_stream = ByteStream::new(bytes);
     /// assert_eq!(byte_stream.read_i64().unwrap(), 506097522914230528);
     /// ```
     /// # Errors
-    /// Returns a `DisassemblerError` if the index is out of bounds.
+    /// Returns a `ByteStreamError` if the index is out of bounds.
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x00, 0x01, 0x02, 0x03, 0x04];
     /// let mut byte_stream = ByteStream::new(bytes);
-    /// assert_eq!(byte_stream.read_i64().unwrap_err().error_type, DisassemblerErrorType::ByteStreamError);
+    /// assert_eq!(byte_stream.read_i64().unwrap_err().error_type, ByteStreamErrorType::ByteStreamError);
     /// ```
-    pub fn read_i64(&mut self) -> Result<i64, DisassemblerError> {
+    pub fn read_i64(&mut self) -> Result<i64, ByteStreamError> {
         if self.is_out_of_bounds(8) {
-            return Err(DisassemblerError::new(self.index as u64, "index out of bounds".to_string(), DisassemblerErrorType::ByteStreamError));
+            return Err(ByteStreamError::new(self, "index out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
         }
 
         let result = i64::from_le_bytes(self.read_bytes(8)?.try_into().unwrap());
@@ -290,26 +350,24 @@ impl ByteStream {
     /// * `count` - The number of bytes to consume.
     /// # Examples
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x00, 0x01, 0x02, 0x03];
     /// let mut byte_stream = ByteStream::new(bytes);
     /// assert_eq!(byte_stream.read_bytes(2).unwrap(), vec![0x00, 0x01]);
     /// ```
     /// # Errors
-    /// Returns a `DisassemblerError` if the index is out of bounds.
+    /// Returns a `ByteStreamError` if the index is out of bounds.
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x00, 0x01, 0x02];
     /// let mut byte_stream = ByteStream::new(bytes);
-    /// assert_eq!(byte_stream.read_bytes(4).unwrap_err().error_type, DisassemblerErrorType::ByteStreamError);
+    /// assert_eq!(byte_stream.read_bytes(4).unwrap_err().error_type, ByteStreamErrorType::ByteStreamError);
     /// ```
-    pub fn read_bytes(&mut self, count: usize) -> Result<Vec<u8>, DisassemblerError> {
+    pub fn read_bytes(&mut self, count: usize) -> Result<Vec<u8>, ByteStreamError> {
         if self.is_out_of_bounds(count) {
-            return Err(DisassemblerError::new(self.index as u64, "index out of bounds".to_string(), DisassemblerErrorType::ByteStreamError));
+            return Err(ByteStreamError::new(self, "index out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
         }
         self.index += count;
         self.history.push((self.index, count));
@@ -331,9 +389,9 @@ impl ByteStream {
     /// // We have now successfully read and reverted back to the original state.
     /// println!("{}", byte_stream.read_i32().unwrap()); // 16384
     /// ```
-    pub fn revert(&mut self) -> Result<(), DisassemblerError> {
+    pub fn revert(&mut self) -> Result<(), ByteStreamError> {
         if self.history.is_empty() {
-            return Err(DisassemblerError::new(self.index as u64, "no history to revert".to_string(), DisassemblerErrorType::ByteStreamError));
+            return Err(ByteStreamError::new(self, "no history to revert".to_string(), ByteStreamErrorType::HistoryFallbackFailure));
         }
 
         let (index, count) = self.history.pop().unwrap();
@@ -344,24 +402,22 @@ impl ByteStream {
     /// Consumes a unsigned little endian base 128 integer from the byte stream and returns it.
     /// # Examples
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x80, 0x80, 0x80, 0x80, 0x08];
     /// let mut byte_stream = ByteStream::new(bytes);
     /// assert_eq!(byte_stream.read_uleb128().unwrap(), 2147483648);
     /// ```
     /// # Errors
-    /// Returns a `DisassemblerError` if the index is out of bounds.
+    /// Returns a `ByteStreamError` if the index is out of bounds.
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![];
     /// let mut byte_stream = ByteStream::new(bytes);
-    /// assert_eq!(byte_stream.read_uleb128().unwrap_err().error_type, DisassemblerErrorType::ByteStreamError);
+    /// assert_eq!(byte_stream.read_uleb128().unwrap_err().error_type, ByteStreamErrorType::ByteStreamError);
     /// ```
-    pub fn read_uleb128(&mut self) -> Result<u64, DisassemblerError> {
+    pub fn read_uleb128(&mut self) -> Result<u64, ByteStreamError> {
         let mut result = 0;
         let mut shift = 0;
         loop {
@@ -378,24 +434,22 @@ impl ByteStream {
     /// Consumes a signed little endian base 128 integer from the byte stream and returns it.
     /// # Examples
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x80, 0x80, 0x80, 0x80, 0x08];
     /// let mut byte_stream = ByteStream::new(bytes);
     /// assert_eq!(byte_stream.read_sleb128().unwrap(), 2147483648);
     /// ```
     /// # Errors
-    /// Returns a `DisassemblerError` if the index is out of bounds.
+    /// Returns a `ByteStreamError` if the index is out of bounds.
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![];
     /// let mut byte_stream = ByteStream::new(bytes);
-    /// assert_eq!(byte_stream.read_sleb128().unwrap_err().error_type, DisassemblerErrorType::ByteStreamError);
+    /// assert_eq!(byte_stream.read_sleb128().unwrap_err().error_type, ByteStreamErrorType::ByteStreamError);
     /// ```
-    pub fn read_sleb128(&mut self) -> Result<i64, DisassemblerError> {
+    pub fn read_sleb128(&mut self) -> Result<i64, ByteStreamError> {
         let mut result = 0;
         let mut shift = 0;
         loop {
@@ -417,73 +471,28 @@ impl ByteStream {
     /// * `count` - The length of the string to read.
     /// # Examples
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x48, 0x65, 0x6C, 0x6C, 0x6F];
     /// let mut byte_stream = ByteStream::new(bytes);
     /// assert_eq!(byte_stream.read_as_string(5).unwrap(), "Hello".to_string());
     /// ```
     /// # Errors
-    /// Returns a `DisassemblerError` if the index is out of bounds.
+    /// Returns a `ByteStreamError` if the index is out of bounds.
     /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamErrorType};
     ///
     /// let bytes = vec![0x48, 0x65, 0x6C, 0x6C, 0x6F];
     /// let mut byte_stream = ByteStream::new(bytes);
-    /// assert_eq!(byte_stream.read_as_string(6).unwrap_err().error_type, DisassemblerErrorType::ByteStreamError);
+    /// assert_eq!(byte_stream.read_as_string(6).unwrap_err().error_type, ByteStreamErrorType::ByteStreamError);
     /// ```
-    pub fn read_as_string(&mut self, count: usize) -> Result<String, DisassemblerError> {
+    pub fn read_as_string(&mut self, count: usize) -> Result<String, ByteStreamError> {
         let bytes = self.read_bytes(count)?;
         let mut result = String::new();
         for byte in bytes {
             result.push(byte as char);
         }
         Ok(result)
-    }
-
-    /// Consumes a computed amount of bytes from the byte stream and returns them as the specified struct.
-    /// # Type Parameters
-    /// * `T` - The type of the struct to read.
-    /// # Examples
-    /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    ///
-    /// #[derive(Debug)]
-    /// struct Vector2 {
-    ///    x: i16,
-    ///    y: i16
-    /// };
-    ///
-    /// let bytes = vec![0x01, 0x00, 0x02, 0x00];
-    /// let mut byte_stream = ByteStream::new(bytes);
-    ///
-    /// let vector = byte_stream.read_struct::<Vector2>().unwrap();
-    /// assert_eq!(vector.x, 1);
-    /// assert_eq!(vector.y, 2);
-    /// ```
-    /// # Errors
-    /// Returns a `DisassemblerError` if the index is out of bounds.
-    /// ```
-    /// use marionette_core::byte_stream::ByteStream;
-    /// use marionette_core::exported_types::DisassemblerErrorType;
-    ///
-    /// #[derive(Debug)]
-    /// struct Vector2 {
-    ///   x: i16,
-    ///   y: i32
-    /// };
-    ///
-    /// let bytes = vec![];
-    /// let mut byte_stream = ByteStream::new(bytes);
-    /// assert_eq!(byte_stream.read_struct::<Vector2>().unwrap_err().error_type, DisassemblerErrorType::ByteStreamError);
-    /// ```
-    pub fn read_struct<T>(&mut self) -> Result<T, DisassemblerError> {
-        let size = std::mem::size_of::<T>();
-        let bytes = self.read_bytes(size)?;
-
-        Ok(unsafe { std::ptr::read(bytes.as_ptr() as *const T) })
     }
 
     /// Takes a unsigned 32 bit integer and returns it as a vector of bytes.
@@ -1075,5 +1084,352 @@ impl ByteStream {
     /// ```
     pub fn current_address(&self) -> u64 {
         self.index as u64
+    }
+
+    /// Returns a copy of the bytes
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// ```
+    pub fn get_bytes(&self) -> Vec<u8> {
+        self.bytes.clone()
+    }
+
+    /// Writes a u8 to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_u8(0);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0]);
+    /// ```
+    pub fn write_u8(&mut self, value: u8) {
+        self.bytes.push(value);
+    }
+
+    /// Writes a u16 to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_u16(0);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0]);
+    /// ```
+    pub fn write_u16(&mut self, value: u16) {
+        self.bytes.push((value >> 8) as u8);
+        self.bytes.push(value as u8);
+    }
+
+    /// Writes a u32 to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_u32(0);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0]);
+    /// ```
+    pub fn write_u32(&mut self, value: u32) {
+        self.bytes.push((value >> 24) as u8);
+        self.bytes.push((value >> 16) as u8);
+        self.bytes.push((value >> 8) as u8);
+        self.bytes.push(value as u8);
+    }
+
+    /// Writes a u64 to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_u64(0);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0]);
+    /// ```
+    pub fn write_u64(&mut self, value: u64) {
+        self.bytes.push((value >> 56) as u8);
+        self.bytes.push((value >> 48) as u8);
+        self.bytes.push((value >> 40) as u8);
+        self.bytes.push((value >> 32) as u8);
+        self.bytes.push((value >> 24) as u8);
+        self.bytes.push((value >> 16) as u8);
+        self.bytes.push((value >> 8) as u8);
+        self.bytes.push(value as u8);
+    }
+
+    /// Writes a uleb128 to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_uleb128(0);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0]);
+    /// ```
+    pub fn write_uleb128(&mut self, mut value: u64) {
+        loop {
+            let mut byte = (value & 0x7f) as u8;
+            value >>= 7;
+            if value != 0 {
+                byte |= 0x80;
+            }
+            self.bytes.push(byte);
+            if value == 0 {
+                break;
+            }
+        }
+    }
+
+    /// Writes a i8 to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_i8(0);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0]);
+    /// ```
+    pub fn write_i8(&mut self, value: i8) {
+        self.bytes.push(value as u8);
+    }
+
+    /// Writes a i16 to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_i16(0);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0]);
+    /// ```
+    pub fn write_i16(&mut self, value: i16) {
+        self.bytes.push((value >> 8) as u8);
+        self.bytes.push(value as u8);
+    }
+
+    /// Writes a i32 to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_i32(0);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0]);
+    /// ```
+    pub fn write_i32(&mut self, value: i32) {
+        self.bytes.push((value >> 24) as u8);
+        self.bytes.push((value >> 16) as u8);
+        self.bytes.push((value >> 8) as u8);
+        self.bytes.push(value as u8);
+    }
+
+    /// Writes a i64 to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_i64(0);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0]);
+    /// ```
+    pub fn write_i64(&mut self, value: i64) {
+        self.bytes.push((value >> 56) as u8);
+        self.bytes.push((value >> 48) as u8);
+        self.bytes.push((value >> 40) as u8);
+        self.bytes.push((value >> 32) as u8);
+        self.bytes.push((value >> 24) as u8);
+        self.bytes.push((value >> 16) as u8);
+        self.bytes.push((value >> 8) as u8);
+        self.bytes.push(value as u8);
+    }
+
+    /// Writes a sleb128 to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_sleb128(0);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0]);
+    /// ```
+    pub fn write_sleb128(&mut self, mut value: i64) {
+        loop {
+            let mut byte = (value & 0x7f) as u8;
+            value >>= 7;
+            let more = !(((value == 0) && ((byte & 0x40) == 0)) || ((value == -1) && ((byte & 0x40) != 0)));
+            if more {
+                byte |= 0x80;
+            }
+            self.bytes.push(byte);
+            if !more {
+                break;
+            }
+        }
+    }
+
+    /// Writes a f32 to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_f32(0.0);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0 ,0]);
+    /// ```
+    pub fn write_f32(&mut self, value: f32) {
+        self.bytes.extend_from_slice(&value.to_le_bytes());
+    }
+
+    /// Writes a f64 to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_f64(0.0);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0 ,0, 0, 0, 0, 0]);
+    /// ```
+    pub fn write_f64(&mut self, value: f64) {
+        self.bytes.extend_from_slice(&value.to_le_bytes());
+    }
+
+    /// Writes a string to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_string("Hello World!");
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33]);
+    /// ```
+    pub fn write_string(&mut self, value: &str) {
+        self.bytes.extend_from_slice(value.as_bytes());
+    }
+
+    /// Writes a byte array to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.write_bytes(vec![8, 9, 10, 11]);
+    /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ,11]);
+    /// ```
+    pub fn write_bytes(&mut self, value: Vec<u8>) {
+        self.bytes.extend_from_slice(&value);
+    }
+
+    /// Writes a struct to the Byte Stream
+    /// # Arguments
+    /// * `value` - The value to write
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    /// use bincode::{Encode};
+    ///
+    /// #[derive(Encode)]
+    /// struct TestStruct {
+    ///     name: String
+    /// }
+    ///
+    /// let mut bs = ByteStream::new(vec![]);
+    /// bs.write_struct(TestStruct { name: "Hello World!".to_string() });
+    /// assert_eq!(bs.get_bytes(), vec![12, 72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33]);
+    /// ```
+    pub fn write_struct<T: Encode>(&mut self, value: T) {
+        let config = bincode::config::standard();
+        let encoded: Vec<u8> = bincode::encode_to_vec(&value, config).unwrap();
+        self.write_bytes(encoded);
+    }
+
+    /// Reads a struct from the Byte Stream
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    /// use bincode::{Encode, Decode};
+    ///
+    /// #[derive(Encode, Decode, PartialEq, Debug)]
+    /// struct TestStruct {
+    ///     name: String
+    /// }
+    ///
+    /// let mut bs = ByteStream::new(vec![12, 72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33]);
+    /// let decoded: TestStruct = bs.read_struct().unwrap();
+    /// assert_eq!(decoded, TestStruct { name: "Hello World!".to_string() });
+    /// assert_eq!(bs.current_address() == 13, true);
+    /// ```
+    pub fn read_struct<T: Decode>(&mut self) -> Result<T, DecodeError> {
+        let config = bincode::config::standard();
+        let decoded: Result<T, DecodeError> = bincode::decode_from_std_read(self, config);
+        decoded
+    }
+
+    /// Jump to a specific address in the Byte Stream
+    /// # Arguments
+    /// * `address` - The address to jump to
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::ByteStream;
+    ///
+    /// let mut bs = ByteStream::new(vec![0, 1, 2, 3, 4, 5, 6, 7]);
+    /// bs.set_address(4);
+    /// assert_eq!(bs.current_address(), 4);
+    /// ```
+    pub fn set_address(&mut self, address: u64) {
+        self.index = address as usize;
+    }
+
+    pub fn sync(&mut self, other: &mut ByteStream) {
+        if self.bytes != other.bytes {
+            return;
+        }
+        other.set_address(self.current_address());
+    }
+}
+
+impl std::io::Read for ByteStream {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let start = self.index;
+        for i in 0..buf.len() {
+            if !self.bytes.is_empty() {
+                buf[i] = self.bytes[self.index];
+                self.index += 1;
+            } else {
+                break;
+            }
+        }
+        Ok(self.index - start)
     }
 }

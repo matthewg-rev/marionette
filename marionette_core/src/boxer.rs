@@ -3,15 +3,79 @@
 // by boxer from jumps sent to it by the disassembler
 // Path: src\boxer.rs
 
+use std::error::Error;
 use crate::boxer::dispute_resolver::{DisputeResolverTrait, SimpleDisputeResolver};
 pub use crate::boxer::dispute_resolver::dispute_rule::{DisputeRule};
 use crate::boxer::grid::{Cell, Grid};
 use crate::boxer::grid::grid_converter::{GridConverter, SimpleGridConverter};
-use crate::exported_types::{DisassemblerError, DisassemblerErrorType};
 
 pub mod grid;
 #[macro_use]
 pub mod dispute_resolver;
+
+pub enum BoxerErrorType {
+    DisputeResolverError,
+    GridConverterError,
+}
+
+impl std::fmt::Debug for BoxerErrorType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            BoxerErrorType::DisputeResolverError => write!(f, "DisputeResolverError"),
+            BoxerErrorType::GridConverterError => write!(f, "GridConverterError"),
+        }
+    }
+}
+
+impl std::fmt::Display for BoxerErrorType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            BoxerErrorType::DisputeResolverError => write!(f, "DisputeResolverError"),
+            BoxerErrorType::GridConverterError => write!(f, "GridConverterError"),
+        }
+    }
+}
+
+pub struct BoxerError {
+    description: String,
+    error_type: BoxerErrorType,
+}
+
+impl BoxerError {
+    pub fn new(description: String, error_type: BoxerErrorType) -> BoxerError {
+        BoxerError {
+            description,
+            error_type,
+        }
+    }
+}
+
+impl Error for BoxerError {
+    fn description(&self) -> &str {
+        &self.description
+    }
+}
+
+impl From<i16> for BoxerError {
+    fn from(error: i16) -> Self {
+        BoxerError {
+            description: error.to_string(),
+            error_type: BoxerErrorType::DisputeResolverError,
+        }
+    }
+}
+
+impl std::fmt::Debug for BoxerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}: {}", self.error_type, self.description)
+    }
+}
+
+impl std::fmt::Display for BoxerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}: {}", self.error_type, self.description)
+    }
+}
 
 impl PartialEq for Cell<i16> {
     fn eq(&self, other: &Self) -> bool {
@@ -27,7 +91,7 @@ impl PartialEq for Cell<char> {
 
 pub struct Boxer {
     dispute_resolver: SimpleDisputeResolver<i16>,
-    grid_converter: SimpleGridConverter<i16, char, DisassemblerError>,
+    grid_converter: SimpleGridConverter<i16, char, BoxerError>,
 }
 
 // implement Default for Boxer
@@ -39,10 +103,10 @@ impl Default for Boxer {
         };
 
         self_.grid_converter.add_rules(vec![
-            Box::new(|value: i16| -> Result<char, DisassemblerError> {
+            Box::new(|value: i16| -> Result<char, BoxerError> {
                 let chars = vec![' ', '─', '│', '┌', '└', '├', '┴', '┤', '┬', '┼'];
                 if value < 0 || value >= chars.len() as i16 {
-                    Err(DisassemblerError::new(0x0, format!("Invalid value: {}", value), DisassemblerErrorType::BoxerError))
+                    Err(BoxerError::new(format!("Invalid value: {}", value), BoxerErrorType::GridConverterError))
                 } else {
                     Ok(chars[value as usize])
                 }
@@ -84,7 +148,7 @@ impl Boxer {
         grid_left
     }
 
-    pub fn convert_grid_to_lines(&self, grid: Grid<i16>) -> Result<Grid<char>, DisassemblerError> {
+    pub fn convert_grid_to_lines(&self, grid: Grid<i16>) -> Result<Grid<char>, BoxerError> {
         let grid = self.grid_converter.convert(grid)?;
         Ok(grid)
     }

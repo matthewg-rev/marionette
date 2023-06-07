@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt::Display;
+use crate::boxer::BoxerError;
 use crate::boxer::grid::{Cell, Grid};
-use crate::exported_types::{DisassemblerError};
 
 pub type GridConverterRule<T, V, E> = dyn Fn(T) -> Result<V, E>;
 
@@ -18,11 +18,11 @@ pub struct SimpleGridConverter<T: Clone + PartialEq + Display, V: Clone + Partia
     rules: Vec<Box<GridConverterRule<T, V, E>>>,
 }
 
-impl Default for SimpleGridConverter<i16, char, DisassemblerError> {
+impl Default for SimpleGridConverter<i16, char, BoxerError> {
     /// Creates a new simple grid converter that converts a grid of i16 to a grid of char.
     /// # Example
     /// ```
-    /// use marionette_core::exported_types::DisassemblerError;
+    /// use marionette_core::interface::DisassemblerError;
     /// use marionette_core::boxer::grid::grid_converter::SimpleGridConverter;
     ///
     /// let mut converter = SimpleGridConverter::<i16, char, DisassemblerError>::default();
@@ -36,7 +36,7 @@ impl<T: Clone + PartialEq + Display, V: Clone + PartialEq + Display, E: Error + 
     /// Creates a new simple grid converter that converts a grid of one type to another type.
     /// # Example
     /// ```
-    /// use marionette_core::exported_types::DisassemblerError;
+    /// use marionette_core::interface::DisassemblerError;
     /// use marionette_core::boxer::grid::grid_converter::SimpleGridConverter;
     ///
     /// let mut converter = SimpleGridConverter::<i16, i32, DisassemblerError>::new();
@@ -54,7 +54,7 @@ impl<T: Clone + PartialEq + Display, V: Clone + PartialEq + Display, E: Error + 
     /// * `rule` - A rule to add to the grid converter.
     /// # Example
     /// ```
-    /// use marionette_core::exported_types::DisassemblerError;
+    /// use marionette_core::interface::DisassemblerError;
     /// use marionette_core::boxer::grid::grid_converter::SimpleGridConverter;
     ///
     /// let mut converter = SimpleGridConverter::<i16, i32, DisassemblerError>::new();
@@ -69,7 +69,7 @@ impl<T: Clone + PartialEq + Display, V: Clone + PartialEq + Display, E: Error + 
     /// * `rules` - A vector of rules to add to the grid converter.
     /// # Example
     /// ```
-    /// use marionette_core::exported_types::DisassemblerError;
+    /// use marionette_core::interface::DisassemblerError;
     /// use marionette_core::boxer::grid::grid_converter::SimpleGridConverter;
     ///
     /// let mut converter = SimpleGridConverter::<i16, i32, DisassemblerError>::new();
@@ -101,7 +101,7 @@ impl<T: Clone + PartialEq + Display, V: Clone + PartialEq + Display, E: Error + 
     /// * `o` - A cell to convert.
     /// # Example
     /// ```
-    /// use marionette_core::exported_types::DisassemblerError;
+    /// use marionette_core::interface::DisassemblerError;
     /// use marionette_core::boxer::grid::grid_converter::SimpleGridConverter;
     ///
     /// let mut converter = SimpleGridConverter::<i16, i32, DisassemblerError>::new();
@@ -127,15 +127,15 @@ impl<T: Clone + PartialEq + Display, V: Clone + PartialEq + Display, E: Error + 
     /// * `grid` - A grid to convert.
     /// # Example
     /// ```
-    /// use marionette_core::exported_types::DisassemblerError;
+    /// use marionette_core::interface::DisassemblerError;
     /// use marionette_core::boxer::grid::grid_converter::SimpleGridConverter;
     /// use marionette_core::boxer::grid::Grid;
-    /// 
+    ///
     /// let mut converter = SimpleGridConverter::<i16, i32, DisassemblerError>::new();
     /// converter.add_rules(vec![
     ///     Box::new(|x| x as i32)
     /// ]);
-    /// 
+    ///
     /// let grid = Grid::new(1, 1, 100);
     /// let new_grid = converter.convert(grid).unwrap();
     /// assert_eq!(new_grid.get_cell(0, 0).unwrap().value, 100);

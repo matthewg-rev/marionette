@@ -1,7 +1,4 @@
 use std::fmt::Display;
-use std::ops::Index;
-use crate::boxer;
-use crate::boxer::Boxer;
 
 pub mod grid_converter;
 
