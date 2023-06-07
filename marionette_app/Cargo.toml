@@ -1,0 +1,23 @@
+[package]
+name = "marionette_app"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+dioxus = {git="https://github.com/DioxusLabs/dioxus.git", branch="master"}
+dioxus-desktop = {git="https://github.com/DioxusLabs/dioxus.git", branch="master"}
+dioxus-router = {git="https://github.com/DioxusLabs/dioxus.git", branch="master"}
+dioxus-html-macro = "0.2.0"
+
+tokio={version="1.13.0", features=["full"]}
+octocrab="0.20.0"
+open="4.1.0"
+
+web-sys = "0.3.61"
+
+chrono = "0.4.24"
+futures-channel = "0.3.28"
+futures = "0.3.28"
+marionette_core = { path = "../marionette_core" }

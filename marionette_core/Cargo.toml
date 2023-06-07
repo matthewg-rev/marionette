@@ -1,0 +1,16 @@
+[package]
+name = "marionette_core"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand="0.8.5"
+bincode = "2.0.0-rc.3"
+libloading = "0.8.0"
+serde = "1.0.163"
+serde_json = { version = "1.0.96", features = ["preserve_order"] }
+
+[build-dependencies]
+rustc_version = "0.4.0"
