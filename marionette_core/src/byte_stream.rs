@@ -1125,8 +1125,7 @@ impl ByteStream {
     /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0]);
     /// ```
     pub fn write_u16(&mut self, value: u16) {
-        self.bytes.push((value >> 8) as u8);
-        self.bytes.push(value as u8);
+        value.to_le_bytes().iter().for_each(|b| self.bytes.push(*b));
     }
 
     /// Writes a u32 to the Byte Stream
@@ -1141,10 +1140,7 @@ impl ByteStream {
     /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0]);
     /// ```
     pub fn write_u32(&mut self, value: u32) {
-        self.bytes.push((value >> 24) as u8);
-        self.bytes.push((value >> 16) as u8);
-        self.bytes.push((value >> 8) as u8);
-        self.bytes.push(value as u8);
+        value.to_le_bytes().iter().for_each(|b| self.bytes.push(*b));
     }
 
     /// Writes a u64 to the Byte Stream
@@ -1159,14 +1155,7 @@ impl ByteStream {
     /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0]);
     /// ```
     pub fn write_u64(&mut self, value: u64) {
-        self.bytes.push((value >> 56) as u8);
-        self.bytes.push((value >> 48) as u8);
-        self.bytes.push((value >> 40) as u8);
-        self.bytes.push((value >> 32) as u8);
-        self.bytes.push((value >> 24) as u8);
-        self.bytes.push((value >> 16) as u8);
-        self.bytes.push((value >> 8) as u8);
-        self.bytes.push(value as u8);
+        value.to_le_bytes().iter().for_each(|b| self.bytes.push(*b));
     }
 
     /// Writes a uleb128 to the Byte Stream
@@ -1221,8 +1210,7 @@ impl ByteStream {
     /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0]);
     /// ```
     pub fn write_i16(&mut self, value: i16) {
-        self.bytes.push((value >> 8) as u8);
-        self.bytes.push(value as u8);
+        value.to_le_bytes().iter().for_each(|b| self.bytes.push(*b));
     }
 
     /// Writes a i32 to the Byte Stream
@@ -1237,10 +1225,7 @@ impl ByteStream {
     /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0]);
     /// ```
     pub fn write_i32(&mut self, value: i32) {
-        self.bytes.push((value >> 24) as u8);
-        self.bytes.push((value >> 16) as u8);
-        self.bytes.push((value >> 8) as u8);
-        self.bytes.push(value as u8);
+        value.to_le_bytes().iter().for_each(|b| self.bytes.push(*b));
     }
 
     /// Writes a i64 to the Byte Stream
@@ -1255,14 +1240,7 @@ impl ByteStream {
     /// assert_eq!(bs.get_bytes(), vec![0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0]);
     /// ```
     pub fn write_i64(&mut self, value: i64) {
-        self.bytes.push((value >> 56) as u8);
-        self.bytes.push((value >> 48) as u8);
-        self.bytes.push((value >> 40) as u8);
-        self.bytes.push((value >> 32) as u8);
-        self.bytes.push((value >> 24) as u8);
-        self.bytes.push((value >> 16) as u8);
-        self.bytes.push((value >> 8) as u8);
-        self.bytes.push(value as u8);
+        value.to_le_bytes().iter().for_each(|b| self.bytes.push(*b));
     }
 
     /// Writes a sleb128 to the Byte Stream
@@ -1409,6 +1387,34 @@ impl ByteStream {
     /// ```
     pub fn set_address(&mut self, address: u64) {
         self.index = address as usize;
+    }
+
+    pub fn hex_dump(bytes: Vec<u8>) -> String {
+        let mut output = String::new();
+        bytes.chunks(16).enumerate().for_each(|(i, chunk)| {
+            output.push_str(&format!("{:08X}  ", i * 16));
+            chunk.iter().for_each(|byte| {
+                output.push_str(&format!("{:02X} ", byte));
+            });
+            // add empty space if we didn't get a full chunk
+            if chunk.len() < 16 {
+                for _ in 0..(16 - chunk.len()) {
+                    output.push_str("   ");
+                }
+            }
+
+            output.push_str("  ");
+            chunk.iter().for_each(|byte| {
+                if *byte >= 0x20 && *byte <= 0x7E {
+                    output.push(*byte as char);
+                } else {
+                    output.push('.');
+                }
+            });
+
+            output.push('\n');
+        });
+        output
     }
 
     pub fn sync(&mut self, other: &mut ByteStream) {

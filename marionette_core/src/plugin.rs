@@ -50,32 +50,18 @@ impl PluginDirectory {
         Err(io::Error::new(io::ErrorKind::Other, "Failed to load library"))
     }
 
-    pub fn get_supported_plugin(&self, bytes: &[u8]) -> Option<&PluginLibrary> {
-        for (_, plugin) in self.registered_plugins.iter() {
-            if let Some(function) = plugin.functions.get("can_disassemble") {
-                let result = function.call(bytes.to_vec());
-                if let Ok(result) = result {
-                    if result.len() == 1 && result[0] == 1 {
-                        return Some(plugin);
-                    }
-                }
-            }
-        }
-        None
-    }
-
-    pub fn can_disassemble(&self, bytes: &[u8]) -> bool {
+    pub fn can_disassemble(&self, bytes: &[u8]) -> (bool, Option<&PluginLibrary>) {
         for (_, plugin) in self.registered_plugins.iter() {
             if let Some(function) = plugin.functions.get("can_disassemble") {
                 let result = function.call(bytes.to_vec());
                 if let Ok(result) = result {
                     if result.len() == 1 {
-                        return result[0] == 1;
+                        return (result[0] == 1, Some(plugin));
                     }
                 }
             }
         }
-        false
+        (false, None)
     }
 }
 

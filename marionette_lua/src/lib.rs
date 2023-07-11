@@ -1,15 +1,26 @@
 mod interface;
+mod configuration;
 
+extern crate sensible_env_logger;
+#[macro_use] extern crate log;
+
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::Write;
 use marionette_core::plugin::interface::{Function, PluginError, PluginRegistrar};
 use marionette_core::plugin::comm::{CompilerInfo};
 use marionette_core::byte_stream::ByteStream;
 use marionette_core::export_plugin;
-use crate::interface::{AddressedData, LuaDisassembly, LuaHeader, LuaDisassemblerInstance, LuaChunkHeader, LuaChunk, LuaInstruction, LuaConstant, LuaConstantValue};
+use marionette_core::textualizer::{Mark, Textualizer};
+use crate::configuration::{Configuration, Instruction, Reg};
+
+use crate::interface::{AddressedData, LuaDisassembly, LuaHeader, LuaDisassemblerInstance, LuaChunkHeader, LuaChunk, LuaInstruction, LuaConstant, LuaConstantValue, LuaLocal, LuaUpvalue};
 
 pub struct GetCompilerInfo;
 pub struct CanDisassemble;
 pub struct NewDisassemblyInstance;
 pub struct Disassemble;
+pub struct DebugDump;
 
 macro_rules! read_into_addressed {
     ($field:expr, $stream:ident, $read:expr) => {
@@ -35,11 +46,29 @@ macro_rules! read_addressed {
 }
 
 macro_rules! read_addressed_multiple {
-    ($($field:expr)+, $stream:ident, $read:expr) => {
+    ($stream:ident, $read:expr, $($field:expr),+) => {
         $(
             read_addressed!($field, $stream, $read);
         )+
     };
+}
+
+pub fn internal_alloc_upvalue(mut instance: LuaDisassemblerInstance, name: String) -> LuaDisassemblerInstance {
+    instance.upvalues.push(name.clone());
+    instance.allocated_upvalues.push(name.clone());
+    instance
+}
+
+pub fn internal_dealloc_upvalues(mut instance: LuaDisassemblerInstance) -> LuaDisassemblerInstance {
+    let allocated_upvalues = instance.allocated_upvalues.clone();
+    let mut upvalues = instance.upvalues.clone();
+    for upvalue in allocated_upvalues {
+        upvalues.retain(|x| x != &upvalue);
+    }
+
+    instance.upvalues = upvalues;
+    instance.allocated_upvalues = Vec::new();
+    instance
 }
 
 pub fn internal_read_lua_constant(size_t: u8, number_size: u8, stream: &mut ByteStream) -> (AddressedData<LuaConstant>, &mut ByteStream) {
@@ -161,6 +190,11 @@ pub fn internal_read_lua_string(size_t: u8, len: i32, stream: &mut ByteStream) -
         addressed_data.data.push(stream.read_u8().unwrap() as char);
     }
 
+    // trim the null terminator
+    if addressed_data.data.ends_with('\0') {
+        addressed_data.data.pop();
+    }
+
     addressed_data.end_address = stream.current_address();
     (addressed_data, stream)
 }
@@ -230,9 +264,175 @@ pub fn internal_disassemble_chunk(instance: LuaDisassemblerInstance, stream: &mu
         instance = new_instance;
     }
 
+    let (num_lines, instance, stream) = internal_read_lua_int(instance, stream);
+    for _ in 0..num_lines.data {
+        let mut line: AddressedData<u32> = AddressedData {
+            data: 0,
+            start_address: stream.current_address(),
+            end_address: stream.current_address(),
+        };
+        line.data = stream.read_u32().unwrap();
+        line.end_address = stream.current_address();
+        addressed_data.data.line_info.push(line);
+    }
+
+    let (num_locals, instance, stream) = internal_read_lua_int(instance, stream);
+    let mut to_allocate = Vec::new();
+    for _ in 0..num_locals.data {
+        let start_address = stream.current_address();
+        let (name, stream) = internal_read_lua_string(instance.disassembly.header.data.size_t_size.data, -1, stream);
+        to_allocate.push(name.data.clone());
+        let mut start_pc: AddressedData<u32> = AddressedData {
+            data: 0,
+            start_address: stream.current_address(),
+            end_address: stream.current_address(),
+        };
+        start_pc.data = stream.read_u32().unwrap();
+        start_pc.end_address = stream.current_address();
+
+        let mut end_pc: AddressedData<u32> = AddressedData {
+            data: 0,
+            start_address: stream.current_address(),
+            end_address: stream.current_address(),
+        };
+        end_pc.data = stream.read_u32().unwrap();
+        end_pc.end_address = stream.current_address();
+
+        let local = LuaLocal {
+            name,
+            start_pc,
+            end_pc,
+        };
+        let local = AddressedData {
+            data: local,
+            start_address,
+            end_address: stream.current_address(),
+        };
+        addressed_data.data.locals.push(local);
+    }
+
+    let mut new_instance = instance.clone();
+    for name in to_allocate {
+        new_instance = internal_alloc_upvalue(new_instance, name);
+    }
+    let instance = new_instance;
+
+    let (num_upvalues, mut instance, stream) = internal_read_lua_int(instance, stream);
+    for _ in 0..num_upvalues.data {
+        let start_address = stream.current_address();
+        let (upvalue, stream) = internal_read_lua_string(instance.disassembly.header.data.size_t_size.data, -1, stream);
+        addressed_data.data.upvalues.push(AddressedData {
+            data: LuaUpvalue {
+                name: upvalue,
+            },
+            start_address,
+            end_address: stream.current_address(),
+        });
+    }
+
     addressed_data.end_address = stream.current_address();
     instance.disassembly.functions.push(addressed_data.clone());
+
+    debug!("\tdisassembled chunk @0x{:X} -> 0x{:X}", addressed_data.start_address, addressed_data.end_address);
+    debug!("\t\t|c| = {}", num_instructions.data);
+    debug!("\t\t|k| = {}", num_constants.data);
+    debug!("\t\t|p| = {}", num_protos.data);
+
+    instance = internal_dealloc_upvalues(instance);
     (addressed_data, instance, stream)
+}
+
+impl Function for Disassemble {
+    fn call(&self, args: Vec<u8>) -> Result<Vec<u8>, PluginError> {
+        let mut return_stream = ByteStream::new(Vec::new());
+        let mut instance = ByteStream::new(args).read_struct::<LuaDisassemblerInstance>().unwrap();
+        let mut raw_stream = ByteStream::new(instance.raw.clone());
+        debug!("beginning disassembly of lua binary");
+
+        instance.disassembly.header.start_address = raw_stream.current_address();
+        read_addressed!(instance.disassembly.header.data.magic, raw_stream, |stream: &mut ByteStream| {
+            stream.read_u32().unwrap()
+        });
+
+        read_addressed_multiple!(
+            raw_stream, |stream: &mut ByteStream| {
+                stream.read_u8().unwrap()
+            },
+            instance.disassembly.header.data.version,
+            instance.disassembly.header.data.format,
+            instance.disassembly.header.data.endianness,
+            instance.disassembly.header.data.int_size,
+            instance.disassembly.header.data.size_t_size,
+            instance.disassembly.header.data.instruction_size,
+            instance.disassembly.header.data.lua_number_size,
+            instance.disassembly.header.data.integral_flag
+        );
+
+        instance.configuration = match instance.disassembly.header.data.version.data {
+            0x51 => Configuration::new(0x51, vec![
+                Instruction::new(0, "MOVE", vec![Reg::new("A"), Reg::new("B")]),
+                Instruction::new(1, "LOADK", vec![Reg::new("A"), Reg::new("Bx")]),
+                Instruction::new(2, "LOADBOOL", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(3, "LOADNIL", vec![Reg::new("A"), Reg::new("B")]),
+                Instruction::new(4, "GETUPVAL", vec![Reg::new("A"), Reg::new("B")]),
+                Instruction::new(5, "GETGLOBAL", vec![Reg::new("A"), Reg::new("Bx")]),
+                Instruction::new(6, "GETTABLE", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(7, "SETGLOBAL", vec![Reg::new("A"), Reg::new("Bx")]),
+                Instruction::new(8, "SETUPVAL", vec![Reg::new("A"), Reg::new("B")]),
+                Instruction::new(9, "SETTABLE", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(10, "NEWTABLE", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(11, "SELF", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(12, "ADD", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(13, "SUB", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(14, "MUL", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(15, "DIV", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(16, "MOD", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(17, "POW", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(18, "UNM", vec![Reg::new("A"), Reg::new("B")]),
+                Instruction::new(19, "NOT", vec![Reg::new("A"), Reg::new("B")]),
+                Instruction::new(20, "LEN", vec![Reg::new("A"), Reg::new("B")]),
+                Instruction::new(21, "CONCAT", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(22, "JMP", vec![Reg::new("sBx")]),
+                Instruction::new(23, "EQ", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(24, "LT", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(25, "LE", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(26, "TEST", vec![Reg::new("A"), Reg::new("C")]),
+                Instruction::new(27, "TESTSET", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(28, "CALL", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(29, "TAILCALL", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(30, "RETURN", vec![Reg::new("A"), Reg::new("B")]),
+                Instruction::new(31, "FORLOOP", vec![Reg::new("A"), Reg::new("sBx")]),
+                Instruction::new(32, "FORPREP", vec![Reg::new("A"), Reg::new("sBx")]),
+                Instruction::new(33, "TFORLOOP", vec![Reg::new("A"), Reg::new("C")]),
+                Instruction::new(34, "SETLIST", vec![Reg::new("A"), Reg::new("B"), Reg::new("C")]),
+                Instruction::new(35, "CLOSE", vec![Reg::new("A")]),
+                Instruction::new(36, "CLOSURE", vec![Reg::new("A"), Reg::new("Bx")]),
+                Instruction::new(37, "VARARG", vec![Reg::new("A"), Reg::new("B")]),
+            ]),
+            _ => panic!("unsupported version"),
+        };
+
+        instance.disassembly.header.end_address = raw_stream.current_address();
+        let (entry_point, mut instance, raw_stream) = internal_disassemble_chunk(instance, raw_stream);
+        instance.disassembly.entry_point = entry_point;
+
+        let mut instruction_count: u64 = 0;
+        let mut constant_count: u64 = 0;
+
+        for function in instance.disassembly.functions.iter() {
+            instruction_count += function.data.instructions.len() as u64;
+        }
+
+        for function in instance.disassembly.functions.iter() {
+            constant_count += function.data.constants.len() as u64;
+        }
+
+        // export instance
+        instance.raw = raw_stream.get_bytes();
+        return_stream.write_struct(instance);
+        debug!("\twrote {} bytes to return stream", return_stream.get_bytes().len());
+        Ok(return_stream.get_bytes())
+    }
 }
 
 impl Function for CanDisassemble {
@@ -244,6 +444,7 @@ impl Function for CanDisassemble {
         if !stream.is_out_of_bounds(4) {
             let bytes = stream.read_bytes(4);
             if bytes.unwrap() == [0x1b, 0x4c, 0x75, 0x61] {
+                debug!("lua magic bytes present");
                 return_stream.write_u8(1);
                 return Ok(return_stream.get_bytes());
             }
@@ -273,6 +474,9 @@ impl Function for NewDisassemblyInstance {
         let mut return_stream = ByteStream::new(Vec::new());
         let instance = LuaDisassemblerInstance {
             raw: args,
+            upvalues: Vec::new(),
+            allocated_upvalues: Vec::new(),
+            configuration: Configuration::new(0, vec![]),
             disassembly: LuaDisassembly::default()
         };
 
@@ -281,37 +485,41 @@ impl Function for NewDisassemblyInstance {
     }
 }
 
-impl Function for Disassemble {
+pub fn calculate_tabbing(tabbing: u64) -> String {
+    let mut tabbing_string = String::new();
+    let tabbing = tabbing - 1;
+    for _ in 0..tabbing { tabbing_string.push('\t'); }
+
+    tabbing_string
+}
+
+impl Function for DebugDump {
     fn call(&self, args: Vec<u8>) -> Result<Vec<u8>, PluginError> {
         let mut return_stream = ByteStream::new(Vec::new());
-        let mut instance = ByteStream::new(args).read_struct::<LuaDisassemblerInstance>().unwrap();
-        let mut raw_stream = ByteStream::new(instance.raw.clone());
+        let mut arg_stream = ByteStream::new(args);
+        let instance = arg_stream.read_struct::<LuaDisassemblerInstance>().unwrap();
+        let mut version_hex = format!("{:x}", instance.disassembly.header.data.version.data);
+        version_hex.insert(1, '.');
 
-        instance.disassembly.header.start_address = raw_stream.current_address();
-        read_addressed!(instance.disassembly.header.data.magic, raw_stream, |stream: &mut ByteStream| {
-            stream.read_u32().unwrap()
-        });
+        let str_len = arg_stream.read_u64().unwrap();
+        let file_to_write = arg_stream.read_as_string(str_len as usize).unwrap();
 
-        read_addressed_multiple!(
-            instance.disassembly.header.data.version
-            instance.disassembly.header.data.format
-            instance.disassembly.header.data.endianness
-            instance.disassembly.header.data.int_size
-            instance.disassembly.header.data.size_t_size
-            instance.disassembly.header.data.instruction_size
-            instance.disassembly.header.data.lua_number_size
-            instance.disassembly.header.data.integral_flag,
-            raw_stream, |stream: &mut ByteStream| {
-                stream.read_u8().unwrap()
-            }
-        );
+        let mut file = File::create(file_to_write).unwrap();
+        file.write_all("DEBUG PROVIDER INFORMATION:\n".as_bytes()).unwrap();
+        file.write_all(format!("\tversion: {}\n", env!("CARGO_PKG_VERSION")).as_bytes()).unwrap();
+        file.write_all("ASSEMBLY INFORMATION:\n".as_bytes()).unwrap();
+        file.write_all(format!("\tLUA VERSION: {}\n", version_hex).as_bytes()).unwrap();
+        file.write_all(format!("\tENDIANNESS: {}\n", instance.disassembly.header.data.endianness.data).as_bytes()).unwrap();
+        file.write_all(format!("\tINT SIZE: {}\n", instance.disassembly.header.data.int_size.data).as_bytes()).unwrap();
+        file.write_all(format!("\tSIZE_T SIZE: {}\n", instance.disassembly.header.data.size_t_size.data).as_bytes()).unwrap();
+        file.write_all(format!("\tINSTRUCTION SIZE: {}\n", instance.disassembly.header.data.instruction_size.data).as_bytes()).unwrap();
+        file.write_all(format!("\tLUA NUMBER SIZE: {}\n", instance.disassembly.header.data.lua_number_size.data).as_bytes()).unwrap();
+        file.write_all(format!("\tINTEGRAL FLAG: {}\n", instance.disassembly.header.data.integral_flag.data).as_bytes()).unwrap();
+        file.write_all(format!("\tFORMAT: {}\n", instance.disassembly.header.data.format.data).as_bytes()).unwrap();
 
-        instance.disassembly.header.end_address = raw_stream.current_address();
-        let (entry_point, mut instance, raw_stream) = internal_disassemble_chunk(instance, raw_stream);
-        instance.disassembly.entry_point = entry_point;
+        file.write_all("DISASSEMBLY HEX DUMP:\n".as_bytes()).unwrap();
+        file.write_all(ByteStream::hex_dump(instance.raw.clone()).as_bytes()).unwrap();
 
-        // export instance
-        instance.raw = raw_stream.get_bytes();
         return_stream.write_struct(instance);
         Ok(return_stream.get_bytes())
     }
@@ -319,9 +527,18 @@ impl Function for Disassemble {
 
 export_plugin!(register_plugin);
 extern "C" fn register_plugin(registrar: &mut dyn PluginRegistrar) {
-    registrar.register_function("disassemble", Box::new(Disassemble));
+    sensible_env_logger::init!();
+
+    // interop functions
     registrar.register_function("can_disassemble", Box::new(CanDisassemble));
     registrar.register_function("get_compiler_info", Box::new(GetCompilerInfo));
+
+    // disassembler functions
     registrar.register_function("new_disassembly_instance", Box::new(NewDisassemblyInstance));
-    println!("✨ Loaded Lua Disassembler plugin {}", env!("CARGO_PKG_VERSION"));
+    registrar.register_function("disassemble", Box::new(Disassemble));
+
+
+    // debug functions
+    registrar.register_function("debug_dump", Box::new(DebugDump));
+    info!("loaded lua disassembler plugin {}", env!("CARGO_PKG_VERSION"));
 }

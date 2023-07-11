@@ -5,7 +5,6 @@ use dioxus::prelude::*;
 use dioxus_router::{use_route, use_router};
 use dioxus_desktop::{LogicalSize, use_window};
 use dioxus_html_macro::*;
-use marionette_core::db_controller::{DatabaseController};
 use std::fs::*;
 use std::os::windows::fs::MetadataExt;
 use std::time::SystemTime;
@@ -260,13 +259,12 @@ pub fn icon_info_from_file(file: FileEntry) -> (String, String, String, String, 
 pub fn projects_container(cx: Scope) -> Element {
     let window = use_window(cx);
     let router = use_router(cx);
-    let database_controller = use_shared_state::<DatabaseController>(cx).unwrap();
     let selector_state = use_shared_state::<SelectorState>(cx).unwrap();
 
     let projects = html!(
         <div class="projects_grid_container">
             {
-                database_controller.read().get_project_databases().iter().map(|proj| {
+                /*database_controller.read().get_project_databases().iter().map(|proj| {
                     let db = proj.clone();
                     let path = proj.database.path.clone();
                     html!(
@@ -337,7 +335,8 @@ pub fn projects_container(cx: Scope) -> Element {
                         <span class="project_icon">""</span>
                         <p id="project_name">{ proj.database.name.clone() }</p>
                     </div>
-                )})
+                )})*/
+                html!()
             }
         </div>
     );

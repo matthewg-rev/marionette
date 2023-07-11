@@ -11,4 +11,6 @@ crate_type = ["dylib"]
 
 [dependencies]
 bincode = "2.0.0-rc.3"
+log = "0.4.18"
+sensible-env-logger = "0.3.2"
 marionette_core = { path = "../marionette_core" }

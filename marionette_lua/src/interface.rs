@@ -1,7 +1,20 @@
 use std::fmt;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use bincode::{Decode, Encode};
 use marionette_core::byte_stream::ByteStream;
+use crate::configuration::Configuration;
+
+macro_rules! implement_fmt_trait {
+    ($trait_name:ident, $type_name:ident, |$self:ident, $f:ident| $fmt_code:block) => {
+        impl $trait_name for $type_name {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                let $self = self;
+                let $f = f;
+                $fmt_code
+            }
+        }
+    };
+}
 
 #[derive(Clone)]
 pub struct AddressedData<T: Encode + Decode + Clone + Display> {
@@ -70,6 +83,11 @@ impl<T: Encode + Decode + Clone + Default + Display> AddressedData<T> {
 #[derive(Clone)]
 pub struct LuaDisassemblerInstance {
     pub raw: Vec<u8>,
+
+    pub upvalues: Vec<String>,
+    pub allocated_upvalues: Vec<String>,
+
+    pub configuration: Configuration,
     pub disassembly: LuaDisassembly,
 }
 
@@ -110,6 +128,9 @@ pub struct LuaChunk {
     pub instructions: Vec<AddressedData<LuaInstruction>>,
     pub constants: Vec<AddressedData<LuaConstant>>,
     pub functions: Vec<AddressedData<LuaChunk>>,
+    pub line_info: Vec<AddressedData<u32>>,
+    pub locals: Vec<AddressedData<LuaLocal>>,
+    pub upvalues: Vec<AddressedData<LuaUpvalue>>,
 }
 
 #[derive(Clone, Default)]
@@ -136,6 +157,18 @@ pub struct LuaConstant {
     pub type_tag: AddressedData<u8>,
 }
 
+#[derive(Clone)]
+pub struct LuaLocal {
+    pub name: AddressedData<String>,
+    pub start_pc: AddressedData<u32>,
+    pub end_pc: AddressedData<u32>,
+}
+
+#[derive(Clone)]
+pub struct LuaUpvalue {
+    pub name: AddressedData<String>,
+}
+
 impl Encode for LuaHeader {
     fn encode<E: bincode::enc::Encoder>(
         &self,
@@ -160,6 +193,9 @@ impl Encode for LuaDisassemblerInstance {
         encoder: &mut E,
     ) -> Result<(), bincode::error::EncodeError> {
         Encode::encode(&self.raw, encoder)?;
+        Encode::encode(&self.upvalues, encoder)?;
+        Encode::encode(&self.allocated_upvalues, encoder)?;
+        Encode::encode(&self.configuration, encoder)?;
         Encode::encode(&self.disassembly, encoder)?;
         Ok(())
     }
@@ -168,9 +204,15 @@ impl Encode for LuaDisassemblerInstance {
 impl Decode for LuaDisassemblerInstance {
     fn decode<D: bincode::de::Decoder>(decoder: &mut D) -> Result<Self, bincode::error::DecodeError> {
         let raw = Decode::decode(decoder)?;
+        let upvalues = Decode::decode(decoder)?;
+        let allocated_upvalues = Decode::decode(decoder)?;
+        let configuration = Decode::decode(decoder)?;
         let disassembly = Decode::decode(decoder)?;
         Ok(LuaDisassemblerInstance {
             raw,
+            upvalues,
+            allocated_upvalues,
+            configuration,
             disassembly
         })
     }
@@ -272,6 +314,9 @@ impl Encode for LuaChunk {
         Encode::encode(&self.instructions, encoder)?;
         Encode::encode(&self.constants, encoder)?;
         Encode::encode(&self.functions, encoder)?;
+        Encode::encode(&self.line_info, encoder)?;
+        Encode::encode(&self.locals, encoder)?;
+        Encode::encode(&self.upvalues, encoder)?;
         Ok(())
     }
 }
@@ -282,11 +327,17 @@ impl Decode for LuaChunk {
         let instructions = Decode::decode(decoder)?;
         let constants = Decode::decode(decoder)?;
         let functions = Decode::decode(decoder)?;
+        let line_info = Decode::decode(decoder)?;
+        let locals = Decode::decode(decoder)?;
+        let upvalues = Decode::decode(decoder)?;
         Ok(LuaChunk {
             header,
             instructions,
             constants,
-            functions
+            functions,
+            line_info,
+            locals,
+            upvalues
         })
     }
 }
@@ -395,6 +446,50 @@ impl Decode for LuaConstant {
     }
 }
 
+impl Encode for LuaLocal {
+    fn encode<E: bincode::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), bincode::error::EncodeError> {
+        Encode::encode(&self.name, encoder)?;
+        Encode::encode(&self.start_pc, encoder)?;
+        Encode::encode(&self.end_pc, encoder)?;
+        Ok(())
+    }
+}
+
+impl Decode for LuaLocal {
+    fn decode<D: bincode::de::Decoder>(decoder: &mut D) -> Result<Self, bincode::error::DecodeError> {
+        let name = Decode::decode(decoder)?;
+        let start_pc = Decode::decode(decoder)?;
+        let end_pc = Decode::decode(decoder)?;
+        Ok(LuaLocal {
+            name,
+            start_pc,
+            end_pc
+        })
+    }
+}
+
+impl Encode for LuaUpvalue {
+    fn encode<E: bincode::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), bincode::error::EncodeError> {
+        Encode::encode(&self.name, encoder)?;
+        Ok(())
+    }
+}
+
+impl Decode for LuaUpvalue {
+    fn decode<D: bincode::de::Decoder>(decoder: &mut D) -> Result<Self, bincode::error::DecodeError> {
+        let name = Decode::decode(decoder)?;
+        Ok(LuaUpvalue {
+            name
+        })
+    }
+}
+
 impl Default for LuaDisassembly {
     fn default() -> LuaDisassembly {
         LuaDisassembly {
@@ -441,7 +536,10 @@ impl Default for LuaChunk {
             header: AddressedData::blank(),
             instructions: Vec::new(),
             constants: Vec::new(),
-            functions: Vec::new()
+            functions: Vec::new(),
+            line_info: Vec::new(),
+            locals: Vec::new(),
+            upvalues: Vec::new()
         }
     }
 }
@@ -461,53 +559,115 @@ impl Display for LuaHeader {
     }
 }
 
-impl Display for LuaChunkHeader {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "LuaChunkHeader:\n");
-        write!(f, "\tname: {}\n", self.name);
-        write!(f, "\tline_defined: {}\n", self.line_defined);
-        write!(f, "\tlast_line_defined: {}\n", self.last_line_defined);
-        write!(f, "\tnum_upvalues: {}\n", self.num_upvalues);
-        write!(f, "\tnum_parameters: {}\n", self.num_parameters);
-        write!(f, "\tis_vararg: {}\n", self.is_vararg);
-        write!(f, "\tmax_stack_size: {}\n", self.max_stack_size)
-    }
-}
+implement_fmt_trait!(Display, LuaChunkHeader, |header, formatter| {
+    write!(formatter, "🪨 {}:{}\n\t{} -> {}\n\t{} up_values\n\t{} parameters\n\t{} stack size\n\t{}",
+        header.name.data,
+        header.line_defined.data,
+        header.line_defined.data,
+        header.last_line_defined.data,
+        header.num_upvalues.data,
+        header.num_parameters.data,
+        header.max_stack_size.data,
+        if header.is_vararg.data == 1 { "vararg" } else { "not vararg" }
+    )
+});
+implement_fmt_trait!(Debug, LuaChunkHeader, |header, formatter| {
+    formatter.debug_struct("LuaChunkHeader")
+        .field("name", &header.name)
+        .field("line_defined", &header.line_defined.data)
+        .field("last_line_defined", &header.last_line_defined.data)
+        .field("num_upvalues", &header.num_upvalues.data)
+        .field("num_parameters", &header.num_parameters.data)
+        .field("is_vararg", &header.is_vararg.data)
+        .field("max_stack_size", &header.max_stack_size.data)
+        .finish()
+});
 
-impl Display for LuaChunk {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "LuaChunk:\n");
-        write!(f, "\t{}\n", self.header)
-    }
-}
+implement_fmt_trait!(Display, LuaChunk, |chunk, formatter| {
+    write!(formatter, "🪨 {}:{}", chunk.header.data.name.data, chunk.header.data.line_defined.data)
+});
+implement_fmt_trait!(Debug, LuaChunk, |chunk, formatter| {
+    formatter.debug_struct("LuaChunk")
+        .field("header", &chunk.header.data)
+        .field("instructions", &chunk.instructions)
+        .finish()
+});
 
-impl Display for LuaInstruction {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "LuaInstruction:\n");
-        write!(f, "\topcode: {}\n", self.opcode);
-        write!(f, "\ta: {}\n", self.a);
-        write!(f, "\tb: {}\n", self.b);
-        write!(f, "\tc: {}\n", self.c);
-        write!(f, "\tbx: {}\n", self.bx);
-        write!(f, "\tsbx: {}\n", self.sbx)
-    }
-}
+implement_fmt_trait!(Display, LuaInstruction, |instruction, formatter| {
+    write!(formatter, "{} {} {} {} {} {}", instruction.opcode, instruction.a, instruction.b, instruction.c, instruction.bx, instruction.sbx)
+});
+implement_fmt_trait!(Debug, LuaInstruction, |instruction, formatter| {
+    formatter.debug_struct("LuaInstruction")
+        .field("opcode", &instruction.opcode)
+        .field("a", &instruction.a)
+        .field("b", &instruction.b)
+        .field("c", &instruction.c)
+        .field("bx", &instruction.bx)
+        .field("sbx", &instruction.sbx)
+        .finish()
+});
 
-impl Display for LuaConstantValue {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            LuaConstantValue::Nil => write!(f, "nil"),
-            LuaConstantValue::Boolean(b) => write!(f, "{}", b),
-            LuaConstantValue::Number(n) => write!(f, "{}", n),
-            LuaConstantValue::String(s) => write!(f, "{}", s)
-        }
+implement_fmt_trait!(Display, LuaConstantValue, |constant_value, formatter| {
+    match constant_value {
+        LuaConstantValue::Nil => write!(formatter, "nil"),
+        LuaConstantValue::Boolean(b) => write!(formatter, "{}", b),
+        LuaConstantValue::Number(n) => write!(formatter, "{}", n),
+        LuaConstantValue::String(s) => write!(formatter, "\"{}\"", s)
     }
-}
+});
+implement_fmt_trait!(Debug, LuaConstantValue, |constant_value, formatter| {
+    formatter.debug_struct("LuaConstantValue")
+        .field("data", &constant_value)
+        .finish()
+});
 
-impl Display for LuaConstant {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "LuaConstant:\n");
-        write!(f, "\ttype_tag: {}\n", self.type_tag);
-        write!(f, "\tvalue: {}\n", self.value)
-    }
-}
+implement_fmt_trait!(Display, LuaConstant, |constant, formatter| { write!(formatter, "{}", constant.value) });
+implement_fmt_trait!(Debug, LuaConstant, |constant, formatter| {
+    formatter.debug_struct("LuaConstant")
+        .field("value", &constant.value.data)
+        .field("type_tag", &constant.type_tag.data)
+        .finish()
+});
+
+implement_fmt_trait!(Display, LuaLocal, |local, formatter| { write!(formatter, "{}", local.name) });
+implement_fmt_trait!(Debug, LuaLocal, |local, formatter| {
+    formatter.debug_struct("LuaLocal")
+        .field("name", &local.name)
+        .field("start_pc", &local.start_pc.data)
+        .field("end_pc", &local.end_pc.data)
+        .finish()
+});
+
+implement_fmt_trait!(Display, LuaUpvalue, |upvalue, formatter| { write!(formatter, "{}", upvalue.name) });
+implement_fmt_trait!(Debug, LuaUpvalue, |upvalue, formatter| {
+    formatter.debug_struct("LuaUpvalue")
+        .field("name", &upvalue.name)
+        .finish()
+});
+
+type AddressedString = AddressedData<String>;
+implement_fmt_trait!(Debug, AddressedString, |addressed_data, formatter| {
+    formatter.debug_struct("AddressedData")
+        .field("start_address", &addressed_data.start_address)
+        .field("end_address", &addressed_data.end_address)
+        .field("data", &addressed_data.data)
+        .finish()
+});
+
+type AddressedInstruction = AddressedData<LuaInstruction>;
+implement_fmt_trait!(Debug, AddressedInstruction, |addressed_data, formatter| {
+    formatter.debug_struct("AddressedData")
+        .field("start_address", &addressed_data.start_address)
+        .field("end_address", &addressed_data.end_address)
+        .field("data", &addressed_data.data)
+        .finish()
+});
+
+type AddressedConstant = AddressedData<LuaConstant>;
+implement_fmt_trait!(Debug, AddressedConstant, |addressed_data, formatter| {
+    formatter.debug_struct("AddressedData")
+        .field("start_address", &addressed_data.start_address)
+        .field("end_address", &addressed_data.end_address)
+        .field("data", &addressed_data.data)
+        .finish()
+});
