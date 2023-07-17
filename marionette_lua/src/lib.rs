@@ -18,8 +18,11 @@ use crate::interface::{AddressedData, LuaDisassembly, LuaHeader, LuaDisassembler
 
 pub struct GetCompilerInfo;
 pub struct CanDisassemble;
+
 pub struct NewDisassemblyInstance;
 pub struct Disassemble;
+pub struct GetFunctions;
+
 pub struct DebugDump;
 
 macro_rules! read_into_addressed {
@@ -53,22 +56,54 @@ macro_rules! read_addressed_multiple {
     };
 }
 
-pub fn internal_alloc_upvalue(mut instance: LuaDisassemblerInstance, name: String) -> LuaDisassemblerInstance {
-    instance.upvalues.push(name.clone());
-    instance.allocated_upvalues.push(name.clone());
-    instance
+impl Function for CanDisassemble {
+    fn call(&self, args: Vec<u8>) -> Result<Vec<u8>, PluginError> {
+        // since this is a single argument function, we can just assume
+        // that all the bytes are the argument
+        let mut stream = ByteStream::new(args);
+        let mut return_stream = ByteStream::new(Vec::new());
+        if !stream.is_out_of_bounds(4) {
+            let bytes = stream.read_bytes(4);
+            if bytes.unwrap() == [0x1b, 0x4c, 0x75, 0x61] {
+                debug!("lua magic bytes present");
+                return_stream.write_u8(1);
+                return Ok(return_stream.get_bytes());
+            }
+        }
+
+        return_stream.write_u8(0);
+        Ok(return_stream.get_bytes())
+    }
 }
 
-pub fn internal_dealloc_upvalues(mut instance: LuaDisassemblerInstance) -> LuaDisassemblerInstance {
-    let allocated_upvalues = instance.allocated_upvalues.clone();
-    let mut upvalues = instance.upvalues.clone();
-    for upvalue in allocated_upvalues {
-        upvalues.retain(|x| x != &upvalue);
-    }
+impl Function for GetCompilerInfo {
+    fn call(&self, _: Vec<u8>) -> Result<Vec<u8>, PluginError> {
+        let mut return_stream = ByteStream::new(Vec::new());
+        let info = CompilerInfo {
+            name: "Lua".to_string(),
+            major: 0,
+            minor: 0
+        };
 
-    instance.upvalues = upvalues;
-    instance.allocated_upvalues = Vec::new();
-    instance
+        return_stream.write_struct(info);
+        Ok(return_stream.get_bytes())
+    }
+}
+
+impl Function for NewDisassemblyInstance {
+    fn call(&self, args: Vec<u8>) -> Result<Vec<u8>, PluginError> {
+        let mut return_stream = ByteStream::new(Vec::new());
+        let instance = LuaDisassemblerInstance {
+            raw: args,
+            upvalues: Vec::new(),
+            allocated_upvalues: Vec::new(),
+            configuration: Configuration::new(0, vec![]),
+            disassembly: LuaDisassembly::default()
+        };
+
+        return_stream.write_struct(instance);
+        Ok(return_stream.get_bytes())
+    }
 }
 
 pub fn internal_read_lua_constant(size_t: u8, number_size: u8, stream: &mut ByteStream) -> (AddressedData<LuaConstant>, &mut ByteStream) {
@@ -277,11 +312,9 @@ pub fn internal_disassemble_chunk(instance: LuaDisassemblerInstance, stream: &mu
     }
 
     let (num_locals, instance, stream) = internal_read_lua_int(instance, stream);
-    let mut to_allocate = Vec::new();
     for _ in 0..num_locals.data {
         let start_address = stream.current_address();
         let (name, stream) = internal_read_lua_string(instance.disassembly.header.data.size_t_size.data, -1, stream);
-        to_allocate.push(name.data.clone());
         let mut start_pc: AddressedData<u32> = AddressedData {
             data: 0,
             start_address: stream.current_address(),
@@ -312,9 +345,6 @@ pub fn internal_disassemble_chunk(instance: LuaDisassemblerInstance, stream: &mu
     }
 
     let mut new_instance = instance.clone();
-    for name in to_allocate {
-        new_instance = internal_alloc_upvalue(new_instance, name);
-    }
     let instance = new_instance;
 
     let (num_upvalues, mut instance, stream) = internal_read_lua_int(instance, stream);
@@ -337,8 +367,6 @@ pub fn internal_disassemble_chunk(instance: LuaDisassemblerInstance, stream: &mu
     debug!("\t\t|c| = {}", num_instructions.data);
     debug!("\t\t|k| = {}", num_constants.data);
     debug!("\t\t|p| = {}", num_protos.data);
-
-    instance = internal_dealloc_upvalues(instance);
     (addressed_data, instance, stream)
 }
 
@@ -435,52 +463,16 @@ impl Function for Disassemble {
     }
 }
 
-impl Function for CanDisassemble {
+impl Function for GetFunctions {
     fn call(&self, args: Vec<u8>) -> Result<Vec<u8>, PluginError> {
-        // since this is a single argument function, we can just assume
-        // that all the bytes are the argument
-        let mut stream = ByteStream::new(args);
         let mut return_stream = ByteStream::new(Vec::new());
-        if !stream.is_out_of_bounds(4) {
-            let bytes = stream.read_bytes(4);
-            if bytes.unwrap() == [0x1b, 0x4c, 0x75, 0x61] {
-                debug!("lua magic bytes present");
-                return_stream.write_u8(1);
-                return Ok(return_stream.get_bytes());
-            }
+        let mut arg_stream = ByteStream::new(args);
+        let instance = arg_stream.read_struct::<LuaDisassemblerInstance>().unwrap();
+
+        for function in instance.disassembly.functions.iter() {
+            return_stream.write_u64(function.start_address);
         }
 
-        return_stream.write_u8(0);
-        Ok(return_stream.get_bytes())
-    }
-}
-
-impl Function for GetCompilerInfo {
-    fn call(&self, _: Vec<u8>) -> Result<Vec<u8>, PluginError> {
-        let mut return_stream = ByteStream::new(Vec::new());
-        let info = CompilerInfo {
-            name: "Lua".to_string(),
-            major: 0,
-            minor: 0
-        };
-
-        return_stream.write_struct(info);
-        Ok(return_stream.get_bytes())
-    }
-}
-
-impl Function for NewDisassemblyInstance {
-    fn call(&self, args: Vec<u8>) -> Result<Vec<u8>, PluginError> {
-        let mut return_stream = ByteStream::new(Vec::new());
-        let instance = LuaDisassemblerInstance {
-            raw: args,
-            upvalues: Vec::new(),
-            allocated_upvalues: Vec::new(),
-            configuration: Configuration::new(0, vec![]),
-            disassembly: LuaDisassembly::default()
-        };
-
-        return_stream.write_struct(instance);
         Ok(return_stream.get_bytes())
     }
 }
@@ -536,7 +528,7 @@ extern "C" fn register_plugin(registrar: &mut dyn PluginRegistrar) {
     // disassembler functions
     registrar.register_function("new_disassembly_instance", Box::new(NewDisassemblyInstance));
     registrar.register_function("disassemble", Box::new(Disassemble));
-
+    registrar.register_function("get_functions", Box::new(GetFunctions));
 
     // debug functions
     registrar.register_function("debug_dump", Box::new(DebugDump));
