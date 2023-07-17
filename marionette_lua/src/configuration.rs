@@ -1,5 +1,4 @@
 use bincode::{Decode, Encode};
-use bincode::config::Config;
 
 #[derive(Clone)]
 pub struct Configuration {
@@ -52,7 +51,6 @@ impl Decode for Configuration {
         Ok(Configuration::new(version, instructions))
     }
 }
-
 
 impl Encode for Reg {
     fn encode<E: bincode::enc::Encoder>(&self, encoder: &mut E) -> Result<(), bincode::error::EncodeError> {
