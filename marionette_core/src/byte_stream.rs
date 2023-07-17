@@ -1389,6 +1389,54 @@ impl ByteStream {
         self.index = address as usize;
     }
 
+    pub fn to_vec_u16(&mut self) -> Vec<u16> {
+        let mut vec = vec![];
+        for _ in 0..self.bytes.len() / 2 {
+            vec.push(self.read_u16().unwrap());
+        }
+        vec
+    }
+
+    pub fn to_vec_u32(&mut self) -> Vec<u32> {
+        let mut vec = vec![];
+        for _ in 0..self.bytes.len() / 4 {
+            vec.push(self.read_u32().unwrap());
+        }
+        vec
+    }
+
+    pub fn to_vec_u64(&mut self) -> Vec<u64> {
+        let mut vec = vec![];
+        for _ in 0..self.bytes.len() / 8 {
+            vec.push(self.read_u64().unwrap());
+        }
+        vec
+    }
+
+    pub fn to_vec_i16(&mut self) -> Vec<i16> {
+        let mut vec = vec![];
+        for _ in 0..self.bytes.len() / 2 {
+            vec.push(self.read_i16().unwrap());
+        }
+        vec
+    }
+
+    pub fn to_vec_i32(&mut self) -> Vec<i32> {
+        let mut vec = vec![];
+        for _ in 0..self.bytes.len() / 4 {
+            vec.push(self.read_i32().unwrap());
+        }
+        vec
+    }
+
+    pub fn to_vec_i64(&mut self) -> Vec<i64> {
+        let mut vec = vec![];
+        for _ in 0..self.bytes.len() / 8 {
+            vec.push(self.read_i64().unwrap());
+        }
+        vec
+    }
+
     pub fn hex_dump(bytes: Vec<u8>) -> String {
         let mut output = String::new();
         bytes.chunks(16).enumerate().for_each(|(i, chunk)| {
