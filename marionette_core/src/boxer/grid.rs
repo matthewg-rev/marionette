@@ -453,3 +453,24 @@ impl<T: Clone + PartialEq + Display> Grid<T> where Cell<T>: Clone {
     }
 }
 
+impl<T: Clone + PartialEq + Display> ToString for Grid<T> where Cell<T>: Clone {
+    /// Converts the grid into a string.
+    /// # Example
+    /// ```
+    /// use marionette_core::boxer::grid::Grid;
+    ///
+    /// let grid = Grid::new(2, 2, 0);
+    /// let grid_string = grid.to_string();
+    /// ```
+    fn to_string(&self) -> String {
+        let mut grid_string = String::new();
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let cell = self.get_cell(x, y).unwrap();
+                grid_string.push_str(&cell.value.to_string());
+            }
+            grid_string.push('\n');
+        }
+        grid_string
+    }
+}

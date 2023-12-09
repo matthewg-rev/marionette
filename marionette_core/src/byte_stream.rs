@@ -1475,15 +1475,20 @@ impl ByteStream {
 
 impl std::io::Read for ByteStream {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        let start = self.index;
-        for i in 0..buf.len() {
-            if !self.bytes.is_empty() {
-                buf[i] = self.bytes[self.index];
-                self.index += 1;
-            } else {
-                break;
+        /* NOTE: This is the original implementation, but it's not as fast as the one below
+            let start = self.index;
+            for i in 0..buf.len() {
+                if !self.bytes.is_empty() {
+                    buf[i] = self.bytes[self.index];
+                    self.index += 1;
+                } else {
+                    break;
+                }
             }
-        }
-        Ok(self.index - start)
+            Ok(self.index - start)
+        */
+        let bytes = self.read_bytes(buf.len()).unwrap();
+        buf.copy_from_slice(&bytes);
+        Ok(bytes.len())
     }
 }

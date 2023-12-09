@@ -136,6 +136,12 @@ body {
     cursor: pointer;
 }
 
+.tab_button:hover {
+    transition: text-shadow 0.25s ease;
+
+    text-shadow: 0 0 5px rgb(255, 255, 255);
+}
+
 .bottom_bar {
     display: flex;
     flex-direction: row;

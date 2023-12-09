@@ -1,0 +1,10 @@
+{
+  "marionette_version": "0.1.0",
+  "databases": [
+    {
+      "database_type": "project_settings",
+      "database_name": "keygen",
+      "database_path": "C:\\Users\\MattG\\OneDrive\\Desktop\\marionette_testing\\keygen.json"
+    }
+  ]
+}

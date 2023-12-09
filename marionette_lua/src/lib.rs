@@ -10,6 +10,7 @@ use std::io::Write;
 use marionette_core::plugin::interface::{Function, PluginError, PluginRegistrar};
 use marionette_core::plugin::comm::{CompilerInfo};
 use marionette_core::byte_stream::ByteStream;
+use marionette_core::cfg::block::Block;
 use marionette_core::export_plugin;
 use marionette_core::textualizer::{Mark, Textualizer};
 use crate::configuration::{Configuration, Instruction, Reg};
@@ -18,12 +19,11 @@ use crate::interface::{AddressedData, LuaDisassembly, LuaHeader, LuaDisassembler
 
 pub struct GetCompilerInfo;
 pub struct CanDisassemble;
-
 pub struct NewDisassemblyInstance;
 pub struct Disassemble;
 pub struct GetFunctions;
-
 pub struct DebugDump;
+pub struct GetCfg;
 
 macro_rules! read_into_addressed {
     ($field:expr, $stream:ident, $read:expr) => {
@@ -444,17 +444,6 @@ impl Function for Disassemble {
         let (entry_point, mut instance, raw_stream) = internal_disassemble_chunk(instance, raw_stream);
         instance.disassembly.entry_point = entry_point;
 
-        let mut instruction_count: u64 = 0;
-        let mut constant_count: u64 = 0;
-
-        for function in instance.disassembly.functions.iter() {
-            instruction_count += function.data.instructions.len() as u64;
-        }
-
-        for function in instance.disassembly.functions.iter() {
-            constant_count += function.data.constants.len() as u64;
-        }
-
         // export instance
         instance.raw = raw_stream.get_bytes();
         return_stream.write_struct(instance);
@@ -517,6 +506,18 @@ impl Function for DebugDump {
     }
 }
 
+impl Function for GetCfg {
+    fn call(&self, args: Vec<u8>) -> Result<Vec<u8>, PluginError> {
+        let mut return_stream = ByteStream::new(Vec::new());
+        let mut arg_stream = ByteStream::new(args);
+        let instance = arg_stream.read_struct::<LuaDisassemblerInstance>().unwrap();
+
+
+
+        Ok(return_stream.get_bytes())
+    }
+}
+
 export_plugin!(register_plugin);
 extern "C" fn register_plugin(registrar: &mut dyn PluginRegistrar) {
     sensible_env_logger::init!();
@@ -529,6 +530,9 @@ extern "C" fn register_plugin(registrar: &mut dyn PluginRegistrar) {
     registrar.register_function("new_disassembly_instance", Box::new(NewDisassemblyInstance));
     registrar.register_function("disassemble", Box::new(Disassemble));
     registrar.register_function("get_functions", Box::new(GetFunctions));
+
+    // control flow graph functions
+    registrar.register_function("get_cfg", Box::new(GetCfg));
 
     // debug functions
     registrar.register_function("debug_dump", Box::new(DebugDump));
