@@ -1017,10 +1017,6 @@ impl ByteStream {
     /// assert_eq!(value, 1.0);
     /// ```
     pub fn get_entropy_of_block(bytes: Vec<u8>) -> f32 {
-        /* we are getting the entropy of a set of bytes
-         * hence we have options from 0->256
-         * we are using the shannon entropy formula
-         */
         let mut entropy = 0.0;
         let mut counts = [0; 256];
         bytes.iter().for_each(|b| counts[*b as usize] += 1);
@@ -1475,18 +1471,6 @@ impl ByteStream {
 
 impl std::io::Read for ByteStream {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        /* NOTE: This is the original implementation, but it's not as fast as the one below
-            let start = self.index;
-            for i in 0..buf.len() {
-                if !self.bytes.is_empty() {
-                    buf[i] = self.bytes[self.index];
-                    self.index += 1;
-                } else {
-                    break;
-                }
-            }
-            Ok(self.index - start)
-        */
         let bytes = self.read_bytes(buf.len()).unwrap();
         buf.copy_from_slice(&bytes);
         Ok(bytes.len())

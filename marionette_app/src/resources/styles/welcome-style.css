@@ -68,7 +68,7 @@ html, body {
 }
 
 .tool-button-container:hover #button_description {
-    text-shadow: 0 0 5px rgb(153, 0, 255);
+    text-shadow: 0 0 5px rgb(250, 255, 182);
 }
 
 .tool-button-icon {
@@ -92,14 +92,14 @@ html, body {
 
     transform: scale(1.025);
 
-    border: 1px solid rgba(153, 0, 255, 0.7);
+    border: 1px solid rgba(250, 255, 182, 0.7);
 
     /* change glow */
-    box-shadow: 0 0 25px rgba(153, 0, 255, 0.4);
+    box-shadow: 0 0 25px rgba(250, 255, 182, 0.4);
 }
 
 .tool-button-icon:hover #svg-data {
-    fill: rgb(153, 0, 255);
+    fill: rgb(250, 255, 182);
 }
 
 #svg-container {
@@ -136,22 +136,22 @@ html, body {
 
     transform: scale(1.025);
 
-    border: 1px solid rgba(153, 0, 255, 0.7);
+    border: 1px solid rgba(250, 255, 182, 0.7);
 
     /* change glow */
-    box-shadow: 0 0 25px rgba(153, 0, 255, 0.4), 0 0.5em 0.5em -0.4em;
+    box-shadow: 0 0 25px rgba(250, 255, 182, 0.4), 0 0.5em 0.5em -0.4em;
 }
 
 .git-release-container:hover #svg-data {
-    fill: rgb(153, 0, 255);
+    fill: rgb(250, 255, 182);
 }
 
 .git-release-container:hover #release-title {
-    text-shadow: 0 0 3px rgb(153, 0, 255);
+    text-shadow: 0 0 3px rgb(250, 255, 182);
 }
 
 .git-release-container:hover #release-description {
-    text-shadow: 0 0 3px rgb(153, 0, 255);
+    text-shadow: 0 0 3px rgb(250, 255, 182);
 }
 
 #svg-data {
@@ -217,9 +217,9 @@ html, body {
 }
 
 #underline_important_text {
-    text-shadow: 0 0 5px rgb(153, 0, 255);
+    text-shadow: 0 0 5px rgb(250, 255, 182);
     text-underline-offset: 4px;
-    text-decoration: underline rgb(153, 0, 255);
+    text-decoration: underline rgb(250, 255, 182);
     text-decoration-thickness: 1px;
 }
 

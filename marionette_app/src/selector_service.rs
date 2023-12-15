@@ -91,14 +91,14 @@ impl ExplorerState {
             };
 
             let file_size = metadata.len();
-            let file_size = if file_size > 1000000000 {
-                format!("{:.2} GB", file_size as f64 / 1000000000.0)
-            } else if file_size > 1000000 {
-                format!("{:.2} MB", file_size as f64 / 1000000.0)
-            } else if file_size > 1000 {
-                format!("{:.2} KB", file_size as f64 / 1000.0)
-            } else {
+            let file_size = if file_size < 1024 {
                 format!("{} B", file_size)
+            } else if file_size < 1024 * 1024 {
+                format!("{:.2} KB", file_size as f64 / 1024.0)
+            } else if file_size < 1024 * 1024 * 1024 {
+                format!("{:.2} MB", file_size as f64 / 1024.0 / 1024.0)
+            } else {
+                format!("{:.2} GB", file_size as f64 / 1024.0 / 1024.0 / 1024.0)
             };
 
             // get file attributes

@@ -107,9 +107,9 @@ body {
 }
 
 #underline_important_text {
-    text-shadow: 0 0 5px rgb(153, 0, 255);
+    text-shadow: 0 0 5px rgb(250, 255, 182);
     text-underline-offset: 4px;
-    text-decoration: underline rgb(153, 0, 255);
+    text-decoration: underline rgb(250, 255, 182);
     text-decoration-thickness: 1px;
 }
 
@@ -188,8 +188,8 @@ body {
 
 .bottom_button:hover {
     background: #1c1c1c;
-    border: 1px solid rgba(153, 0, 255, 0.7);
-    box-shadow: 0 0 25px rgba(153, 0, 255, 0.4);
+    border: 1px solid rgba(250, 255, 182, 0.7);
+    box-shadow: 0 0 25px rgba(250, 255, 182, 0.4);
 }
 
 .input_box {
@@ -262,12 +262,12 @@ body {
 
 .file_explorer_button:hover {
     background: #1c1c1c;
-    border: 1px solid rgba(153, 0, 255, 0.7);
-    box-shadow: 0 0 25px rgba(153, 0, 255, 0.4);
+    border: 1px solid rgba(250, 255, 182, 0.7);
+    box-shadow: 0 0 25px rgba(250, 255, 182, 0.4);
 }
 
 .file_explorer_button:hover #svg-data {
-    fill: rgba(153, 0, 255, 0.7);
+    fill: rgba(250, 255, 182, 0.7);
 }
 
 .file_explorer_container {
@@ -364,18 +364,18 @@ body {
 
 .project_container:hover {
     /* fade in the colors over time */
-    border: 1px solid rgb(153, 0, 255);
-    box-shadow: 0 0 15px rgba(153, 0, 255, 0.4);
+    border: 1px solid rgb(250, 255, 182);
+    box-shadow: 0 0 15px rgba(250, 255, 182, 0.4);
 }
 
 .project_container:hover #project_name {
-    color: rgb(153, 0, 255);
-    text-shadow: 0 0 5px rgb(153, 0, 255);
+    color: rgb(250, 255, 182);
+    text-shadow: 0 0 5px rgb(250, 255, 182);
 }
 
 .project_container:hover .project_icon {
-    color: rgb(153, 0, 255);
-    text-shadow: 0 0 5px rgb(153, 0, 255);
+    color: rgb(250, 255, 182);
+    text-shadow: 0 0 5px rgb(250, 255, 182);
 }
 
 .project_icon {

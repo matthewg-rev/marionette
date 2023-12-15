@@ -133,6 +133,6 @@ html, body {
 
 .msgbox_button:hover {
     background: #1c1c1c;
-    border: 1px solid rgba(153, 0, 255, 0.7);
-    box-shadow: 0 0 25px rgba(153, 0, 255, 0.4);
+    border: 1px solid rgba(250, 255, 182, 0.7);
+    box-shadow: 0 0 25px rgba(250, 255, 182, 0.4);
 }

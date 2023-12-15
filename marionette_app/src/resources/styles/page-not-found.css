@@ -57,9 +57,9 @@ html, body {
     margin: 5% 0 0;
 
     /* slight glow */
-    text-shadow: 0 0 5px rgb(153, 0, 255);
+    text-shadow: 0 0 5px rgb(250, 255, 182);
     text-underline-offset: 4px;
-    text-decoration: underline rgb(153, 0, 255);
+    text-decoration: underline rgb(250, 255, 182);
     text-decoration-thickness: 1px;
 }
 
