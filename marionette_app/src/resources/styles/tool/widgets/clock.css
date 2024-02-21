@@ -1,0 +1,26 @@
+#widget > #clock {
+    position: absolute;
+
+    visibility: hidden;
+    color: #9b9b9b;
+
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: lighter;
+    font-size: calc(12px + 0.5vw);
+
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+
+    top: 20px;
+    height: calc(100% - 20px);
+    width: 100%;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}

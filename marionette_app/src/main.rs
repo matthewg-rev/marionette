@@ -26,7 +26,7 @@ fn portal(cx: Scope) -> Element {
 
     cx.render(rsx!(
         html!(<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />),
-        style { include_str!("resources/styles/file-icons.min.css") },
+        style { include_str!("resources/styles/misc/file-icons.min.css") },
         Router {
             Route { to: "/", welcome::welcome_page {} },
             Route { to: "/open", selector_service::analysis_selector { } },

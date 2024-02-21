@@ -201,7 +201,7 @@ impl Msg {
         VirtualDom::new_with_props(move |cx| {
             let window = use_window(cx);
             cx.render(rsx!(
-                    style { include_str!("resources/styles/msgbox.css") }
+                    style { include_str!("resources/styles/msgbox/msgbox.css") }
                     html!(
                         <div class="msgbox_icon_title">
                             <span class="msgbox_icon" style="color: {icon_color(cx.props.icon.clone())}">{msg_icon(cx.props.icon.clone())}</span>

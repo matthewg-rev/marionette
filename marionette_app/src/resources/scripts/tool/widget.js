@@ -23,6 +23,10 @@ class Widget {
             this.drop.id = 'drop';
             this.drop.innerHTML = '󰅀';
 
+            this.close = this.header.appendChild(document.createElement('div'));
+            this.close.id = 'close';
+            this.close.innerHTML = '';
+
             this.drag = this.element.appendChild(document.createElement('div'));
             this.drag.id = 'drag';
             this.drag.innerHTML = '󰑝';
@@ -35,7 +39,10 @@ class Widget {
 
             dragMouseDown: this.dragMouseDown.bind(this),
             dragMouseMove: this.dragMouseMove.bind(this),
-            dragMouseUp: this.dragMouseUp.bind(this)
+            dragMouseUp: this.dragMouseUp.bind(this),
+
+            dropClick: this.dropClick.bind(this),
+            closeClick: this.closeClick.bind(this)
         }
 
         this.onExpand = {};
@@ -59,19 +66,51 @@ class Widget {
         }
 
         this.header.addEventListener('mousedown', this.binds.headerMouseDown);
-        this.drop.addEventListener('click', () => {
-            this.flags.expanded = !this.flags.expanded;
-            this.element.style.height = this.flags.expanded ? this.positionInfo.resizing.currentSize.height + 'px' : '20px';
-            this.drag.style.visibility = this.flags.expanded ? 'visible' : 'hidden';
-            this.drop.style.transform = this.flags.expanded ? 'rotate(180deg)' : 'rotate(0deg)';
-            for (const key in this.onExpand) {
-                this.onExpand[key]();
-            }
+        this.drop.addEventListener('click', this.binds.dropClick);
+        this.close.addEventListener('click', this.binds.closeClick);
+    }
 
-            if (this.flags.expanded) {
-                this.drag.addEventListener('mousedown', this.binds.dragMouseDown);
+    closeClick(e) {
+        for (const child of this.element.children) {
+            if (child.id === 'header') continue;
+            child.style.transition = 'all 0.5s ease-in-out';
+            child.style.opacity = '0';
+        }
+
+        setTimeout(() => {
+            for (const child of this.header.children) {
+                child.style.transition = 'all 0.25s ease-in-out';
+                child.style.opacity = '0';
             }
-        });
+            
+            this.element.style.transition = 'all 0.5s ease-in-out';
+            this.element.style.width = '0px';
+            this.element.style.height = '0px';
+
+            setTimeout(() => {
+                this.header.removeEventListener('mousedown', this.binds.headerMouseDown);
+                this.drop.removeEventListener('click', this.binds.dropClick);
+                this.close.removeEventListener('click', this.binds.closeClick);
+                
+                this.canvas.element.removeEventListener('mousemove', this.binds.headerMouseMove);
+                this.header.removeEventListener('mouseup', this.binds.headerMouseUp);
+                this.element.remove();
+            }, 500);
+        }, 500);
+    }
+
+    dropClick(e) {
+        this.flags.expanded = !this.flags.expanded;
+        this.element.style.height = this.flags.expanded ? this.positionInfo.resizing.currentSize.height + 'px' : '20px';
+        this.drag.style.visibility = this.flags.expanded ? 'visible' : 'hidden';
+        this.drop.style.transform = this.flags.expanded ? 'rotate(180deg)' : 'rotate(0deg)';
+        for (const key in this.onExpand) {
+            this.onExpand[key]();
+        }
+
+        if (this.flags.expanded) {
+            this.drag.addEventListener('mousedown', this.binds.dragMouseDown);
+        }
     }
 
     headerMouseDown(e) {

@@ -319,7 +319,7 @@ pub fn analysis_selector(cx: Scope) -> Element {
     let tab_str = route.segment("tab").unwrap_or("none");
 
     cx.render(rsx!(
-        style { include_str!("resources/styles/analysis-selector.css") }
+        style { include_str!("resources/styles/analysis-selector/analysis-selector.css") }
         html!(
             { rsx! { header_container {} } }
             {

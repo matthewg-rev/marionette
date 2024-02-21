@@ -1,0 +1,70 @@
+@import url("https://www.nerdfonts.com/assets/css/combo.css");
+@import url("https://fonts.googleapis.com/css?family=JetBrains Mono");
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@100&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Coustard&display=swap');
+
+@font-face {
+    font-family: 'NerdFontsSymbols Nerd Font';
+    src: url("resources/fonts/Symbols-2048-em Nerd Font Complete.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal
+}
+
+pre {
+    visibility: hidden;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: #0c0c0c;
+    overflow: hidden;
+    margin: 0;
+}
+
+#main {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+#toolbar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background: #0f0f0f;
+    color: #ffffff;
+    font-family: 'Roboto Slab', serif;
+    font-size: 1.5em;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    height: 25px;
+    margin: 0;
+
+    border-bottom: 1px solid #484848;
+}
+
+.canvas {
+    width: 100%;
+    height: 100%;
+
+    color: #0c0c0c;
+    --grid-size: 20px;
+    --grid-strength: 1px;
+    --grid-dash: 8px;
+    --grid-gap: 5px;
+    --grid-color: #1c1c1c;
+    --paper-color: #0c0c0c;
+
+    background-color: var(--paper-color);
+    background-size: var(--grid-dash) var(--grid-dash), var(--grid-size) var(--grid-size);
+    background-image:
+        linear-gradient(to bottom, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)), 
+        linear-gradient(to right, var(--grid-color) var(--grid-strength), transparent var(--grid-strength)),
+        linear-gradient(to right, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)),
+        linear-gradient(to bottom, var(--grid-color) var(--grid-strength), transparent var(--grid-strength));
+}

@@ -115,7 +115,7 @@ pub fn welcome_page(cx: Scope) -> Element {
     window.set_inner_size(LogicalSize::new(825, 500));
     cx.render(
         rsx!(
-            style { include_str!("resources/styles/welcome-style.css") },
+            style { include_str!("resources/styles/welcome/welcome.css") },
             script { include_str!("resources/scripts/welcome.js") },
             html!(
                 <h1 id="welcome-message">"Marionette"</h1>
