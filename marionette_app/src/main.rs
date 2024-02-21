@@ -3,6 +3,7 @@ mod page_not_found;
 mod selector_service;
 mod tool;
 mod msgbox;
+mod states;
 
 use dioxus::prelude::*;
 use dioxus_html_macro::html;
@@ -20,11 +21,11 @@ fn main() {
 }
 
 fn portal(cx: Scope) -> Element {
-    let selector_state = selector_service::SelectorState::new();
+    let selector_state = states::selector::SelectorState::new();
     use_shared_state_provider(cx, || selector_state);
 
     cx.render(rsx!(
-        html!(<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />)
+        html!(<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />),
         style { include_str!("resources/styles/file-icons.min.css") },
         Router {
             Route { to: "/", welcome::welcome_page {} },

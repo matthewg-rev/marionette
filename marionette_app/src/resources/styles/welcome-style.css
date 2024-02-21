@@ -1,5 +1,6 @@
 @import url("https://www.nerdfonts.com/assets/css/combo.css");
 @import url("https://fonts.googleapis.com/css?family=JetBrains Mono");
+@import url("https://fonts.googleapis.com/css?family=IBM Plex Mono");
 
 pre {
     visibility: hidden;
@@ -10,10 +11,30 @@ pre {
 
 html, body {
     width: 100%;
-    height: 100%;
-    background: #1c1c1c;
+    /* background gradient */
+    /* background: linear-gradient(65deg, #0c0c0c 0%, #1c1c1c 100%); */
+    background-image: linear-gradient(-45deg, #ff00ff,#ff2121, #ff0062, #3348ff, #6200ff);
+    background-size: 400% 400%;
+	animation: gradient 15s ease infinite;
+    height: 100vh;
+
+    transition: all 0.15s ease;
+    backdrop-filter: blur(10px);
     overflow: hidden;
 }
+
+@keyframes gradient {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}
+
 
 #main {
     width: 100%;
@@ -26,7 +47,7 @@ html, body {
     flex-wrap: wrap;
     width: 100%;
     height: fit-content;
-    margin-top: 25px;
+    margin-top: 35px;
     margin-bottom: 25px;
     justify-content: center;
     align-items: center;
@@ -58,109 +79,43 @@ html, body {
 }
 
 .tool-button-container {
+    width: 192px;
+    height: 256px;
+    margin-bottom: 5px;
+    border-radius: 10px;
+    background: #1f1f1f;
+    border: 3px solid #2d2d2d;
+    cursor: pointer;
+
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    margin-left: 10px;
-    margin-right: 10px;
-    transition: transform 0.25s ease;
+    margin-left: 50px;
+    margin-right: 50px;
+
+    transition: all 0.15s ease;
+}
+
+.tool-button-container:hover {
+    border: 3px solid rgb(250, 255, 182);
+    transform: translateY(-5px);
+}
+
+.tool-button-container:hover #button_header {
+    transform: translateY(-65px);
 }
 
 .tool-button-container:hover #button_description {
-    text-shadow: 0 0 5px rgb(250, 255, 182);
+    visibility: visible;
+    opacity: 1;
+    position: static;
+    transition: opacity 0.3s ease, visibility 0.2s ease, transform 0.2s ease;
 }
 
-.tool-button-icon {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 64px;
-    height: 64px;
-    margin-bottom: 5px;
-    border-radius: 10px;
-    background: #2d2d2d;
-    box-shadow: 0 0 10px #000;
-    cursor: pointer;
-
-    transition: transform 0.25s ease;
-}
-
-.tool-button-icon:hover {
-    background: #252525;
-
-    transform: scale(1.025);
-
-    border: 1px solid rgba(250, 255, 182, 0.7);
-
-    /* change glow */
-    box-shadow: 0 0 25px rgba(250, 255, 182, 0.4);
-}
-
-.tool-button-icon:hover #svg-data {
-    fill: rgb(250, 255, 182);
-}
-
-#svg-container {
-    align-items: center;
-    display: flex;
-    height: 100%;
-    justify-content: center;
-}
-
-#svg-contained {
-    overflow-clip-margin: content-box;
-    overflow: hidden;
-}
-
-.git-release-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    width: fit-content;
-    height: 64px;
-    margin-top: 10px;
-    margin-bottom: 5px;
-    border-radius: 10px;
-    background: #2d2d2d;
-    box-shadow: 0 0 5px #000;
-    cursor: pointer;
-    background-size: contain;
-    transition: transform 0.18s ease;
-}
-
-.git-release-container:hover {
-    background: #252525;
-
-    transform: scale(1.025);
-
-    border: 1px solid rgba(250, 255, 182, 0.7);
-
-    /* change glow */
-    box-shadow: 0 0 25px rgba(250, 255, 182, 0.4), 0 0.5em 0.5em -0.4em;
-}
-
-.git-release-container:hover #svg-data {
-    fill: rgb(250, 255, 182);
-}
-
-.git-release-container:hover #release-title {
-    text-shadow: 0 0 3px rgb(250, 255, 182);
-}
-
-.git-release-container:hover #release-description {
-    text-shadow: 0 0 3px rgb(250, 255, 182);
-}
-
-#svg-data {
-    fill: #ffffff;
-}
-
-#descriptor, #button_description {
-    font-family: 'JetBrains Mono', serif;
-    font-size: 0.8em;
+#descriptor {
+    font-family: 'IBM Plex Mono', sans-serif;
+    font-size: 1em;
     font-weight: 100;
     color: #c9c9c9;
     padding: 0;
@@ -168,28 +123,38 @@ html, body {
     margin: 0 0 0;
 }
 
-#release-title {
-    font-family: 'JetBrains Mono', serif;
-    font-size: 0.8em;
-    font-weight: 100;
-    color: #e5e5e5;
+#button_header {
+    font-family: 'IBM Plex Mono', sans-serif;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #c9c9c9;
+    /* make text aligned to parent left without using its margin */
     padding: 0;
     text-align: center;
     margin: 0 0 0;
-    transition: transform 0.25s ease;
-    text-shadow: 0 0 5px rgb(0, 0, 0);
+    display: inline-block;
+    position: absolute;
+
+    transition: all 0.15s ease;
 }
 
-#release-description {
-    font-family: 'JetBrains Mono', serif;
-    font-size: 0.7em;
+#button_description {
+    display: inline-block;
+    visibility: hidden;
+
+    font-family: 'IBM Plex Mono', sans-serif;
+    font-size: 0.855em;
     font-weight: 100;
     color: #c9c9c9;
-    padding: 0;
     text-align: center;
-    margin: 0 0 0;
-    transition: transform 0.25s ease;
-    text-shadow: 0 0 5px rgb(0, 0, 0);
+    opacity: 0;
+
+    padding: 0 10px 0 10px;
+
+    /* padding between button_header */
+    margin-top: 5px;
+
+    transition: all 0.15s ease;
 }
 
 #version {
@@ -197,8 +162,8 @@ html, body {
     bottom: 0;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-family: 'JetBrains Mono', serif;
-    font-size: 0.7em;
+    font-family: 'IBM Plex Mono', sans-serif;
+    font-size: 0.9em;
     font-weight: 100;
     color: #c9c9c9;
     padding: 0;
@@ -206,23 +171,18 @@ html, body {
     margin: 0 0 0;
 }
 
-#welcome_message {
-    font-family: 'JetBrains Mono', serif;
+#welcome-message {
+    font-family: 'IBM Plex Mono', sans-serif;
     font-size: 2em;
-    font-weight: 100;
+    font-weight: bold;
     color: #fff;
     padding: 0;
     text-align: center;
     margin: 5% 0 0;
 }
 
-#underline_important_text {
-    text-shadow: 0 0 5px rgb(250, 255, 182);
+#underline-important_text {
     text-underline-offset: 4px;
     text-decoration: underline rgb(250, 255, 182);
     text-decoration-thickness: 1px;
-}
-
-#logo-svg {
-    position: absolute;
 }

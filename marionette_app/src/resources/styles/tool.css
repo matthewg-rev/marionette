@@ -1,0 +1,271 @@
+@import url("https://www.nerdfonts.com/assets/css/combo.css");
+@import url("https://fonts.googleapis.com/css?family=JetBrains Mono");
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@100&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Coustard&display=swap');
+
+@font-face {
+    font-family: 'NerdFontsSymbols Nerd Font';
+    src: url("resources/fonts/Symbols-2048-em Nerd Font Complete.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal
+}
+
+pre {
+    visibility: hidden;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: #0c0c0c;
+    overflow: hidden;
+    margin: 0;
+}
+
+#main {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background: #0f0f0f;
+    color: #ffffff;
+    font-family: 'Roboto Slab', serif;
+    font-size: 1.5em;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    height: 25px;
+    margin: 0;
+
+    border-bottom: 1px solid #484848;
+}
+
+.canvas {
+    width: 100%;
+    height: 100%;
+
+    color: #0c0c0c;
+    --grid-size: 20px;
+    --grid-strength: 1px;
+    --grid-dash: 8px;
+    --grid-gap: 5px;
+    --grid-color: #1c1c1c;
+    --paper-color: #0c0c0c;
+
+    background-color: var(--paper-color);
+    background-size: var(--grid-dash) var(--grid-dash), var(--grid-size) var(--grid-size);
+    background-image:
+        linear-gradient(to bottom, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)), 
+        linear-gradient(to right, var(--grid-color) var(--grid-strength), transparent var(--grid-strength)),
+        linear-gradient(to right, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)),
+        linear-gradient(to bottom, var(--grid-color) var(--grid-strength), transparent var(--grid-strength));
+}
+
+#widget {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background: #0f0f0f;
+    color: #ffffff;
+    font-family: 'Roboto Slab', serif;
+    font-size: 1.5em;
+    width: 100px;
+    height: 20px;
+    margin: 0;
+    border: 1px solid #202020;
+
+    transition: width 0.1s ease, height 0.1s ease;
+    animation: normborder 0.2s both;
+}
+
+#widget:hover {
+    animation: hoverborder 0.2s both;
+}
+
+@keyframes hoverborder {
+    0% {
+        border: 1px solid #202020;
+    }
+    100% {
+        border: 1px solid #484848;
+    }
+}
+
+@keyframes normborder {
+    0% {
+        border: 1px solid #484848;
+    }
+    100% {
+        border: 1px solid #202020;
+    }
+}
+
+#widget > #header {
+    position: absolute;
+    top: 0;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background: #202020;
+    color: #9b9b9b;
+    font-family: 'Roboto Slab', serif;
+    font-size: 1.5em;
+    height: 20px;
+    width: 100%;
+    margin: 0;
+
+    cursor: pointer;
+    border: 1px solid #202020;
+
+    -webkit-transform: perspective(1px) translateZ(0);
+    transform: perspective(1px) translateZ(0);
+    -webkit-transition-property: color;
+    transition-property: color;
+    -webkit-transition-duration: 0.25s;
+    transition-duration: 0.25s;
+}
+
+#widget > #header:before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    -webkit-transform: scaleY(0);
+    transform: scaleY(0);
+    -webkit-transform-origin: 50% 100%;
+    transform-origin: 50% 100%;
+    -webkit-transition-property: transform;
+    transition-property: transform;
+    -webkit-transition-duration: 0.25s;
+    transition-duration: 0.25s;
+    -webkit-transition-timing-function: ease-out;
+    transition-timing-function: ease-out;
+
+    background: #484848;
+}
+
+#widget > #header:hover:hover, #widget > #header:hover:focus, #widget > #header:hover:active {
+    color: #bbbbbb;
+}
+
+#widget > #header:hover:before, #widget > #header:focus:before, #widget > #header:active:before {
+    -webkit-transform: scaleY(1);
+    transform: scaleY(1);
+    -webkit-transition-timing-function: cubic-bezier(0.52, 1.64, 0.37, 0.66);
+    transition-timing-function: cubic-bezier(0.52, 1.64, 0.37, 0.66);
+  }
+
+#widget > #header > #title {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: lighter;
+    font-size: 12px;
+
+    height: 20px;
+    width: 100%;
+    margin: 0;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+#widget > #header > #drop {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+
+    font-family: 'NerdFontsSymbols Nerd Font', monospace;
+    font-weight: lighter;
+    font-size: 10px;
+
+    height: 20px;
+    width: 20px;
+    margin: 0;
+    
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+#widget > #drag {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+
+    visibility: hidden;
+    color: #9b9b9b;
+
+    font-family: 'NerdFontsSymbols Nerd Font', monospace;
+    font-weight: lighter;
+    font-size: 10px;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+
+    z-index: 5;
+    height: 20px;
+    width: 20px;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    cursor: se-resize;
+}
+
+#widget > #clock {
+    position: absolute;
+
+    visibility: hidden;
+    color: #9b9b9b;
+
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: lighter;
+    font-size: calc(12px + 0.5vw);
+
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+
+    top: 20px;
+    height: calc(100% - 20px);
+    width: 100%;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}

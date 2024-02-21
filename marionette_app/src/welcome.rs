@@ -3,6 +3,8 @@ use dioxus_router::{Link, Router, Route, Redirect};
 use dioxus_desktop::{Config, LogicalSize, use_window, WindowBuilder};
 use dioxus_html_macro::*;
 
+use crate::msgbox::{Msg, MsgButtons, MsgResult, MsgSize, MsgType};
+
 fn is_outdated() -> bool {
     let octocrab = octocrab::instance();
     let repo_handler = octocrab.repos("matthewg-rev", "marionette");
@@ -25,7 +27,29 @@ fn latest_commit_element(cx: Scope) -> LazyNodes {
     let releases_handler = repo_handler.releases();
     let latest_release = releases_handler.get_latest();
     let latest_release = tokio::runtime::Runtime::new().unwrap().block_on(latest_release);
+    let window = use_window(cx);
+
     if let Ok(latest_release) = latest_release {
+        let latest_version = latest_release.clone().tag_name;
+        let latest_body = latest_release.clone().body.clone().unwrap();
+        let latest_body_truncated = if latest_body.len() > 33 {
+            latest_body[..33].to_string() + "..."
+        } else {
+            latest_body.clone()
+        };
+
+        let mut msgbox = Msg::new(
+            format!(
+                "Marionette has updated:\n{}",
+                latest_body
+            ),
+            format!("Version {} is available!", latest_version),
+            MsgType::Info,
+            MsgButtons::Ok,
+            MsgSize::Fit
+        );
+        msgbox.display(window);
+
         return html!(
             <div class="row">
                 <div class="git-release-container" onclick={ move |_| {
@@ -48,8 +72,8 @@ fn latest_commit_element(cx: Scope) -> LazyNodes {
                         </div>
                     </div>
                     <div class="column" style="margin-left: 25px; margin-right: 25px;">
-                        <p id="release-title">{latest_release.tag_name + " - " + latest_release.name.unwrap_or("".to_string()).as_str()}</p>
-                        <p id="release-description">{latest_release.body.unwrap()[0..35].to_string() + "..."}</p>
+                        <p id="release-title">{latest_version + " - " + latest_release.name.unwrap_or("".to_string()).as_str()}</p>
+                        <p id="release-description">{latest_body_truncated}</p>
                     </div>
                 </div>
             </div>
@@ -64,12 +88,8 @@ fn launch_analysis_element(cx: Scope) -> Element {
                 let router = dioxus_router::use_router(cx);
                 router.navigate_to("/open");
             }}>
-            <div class="tool-button-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px; viewBox: 0 0 32 32; fill:#fff;">
-                    <path id="svg-data" d="M28.5039,8.1362l-12-7a1,1,0,0,0-1.0078,0l-12,7A1,1,0,0,0,3,9V23a1,1,0,0,0,.4961.8638l12,7a1,1,0,0,0,1.0078,0l12-7A1,1,0,0,0,29,23V9A1,1,0,0,0,28.5039,8.1362ZM16,3.1577,26.0156,9,16,14.8423,5.9844,9ZM5,10.7412l10,5.833V28.2588L5,22.4258ZM17,28.2588V16.5742l10-5.833V22.4258Z"/>
-                </svg>
-            </div>
-            <p id="button_description">"Launch Analysis"</p>
+            <p id="button_header">"Launch Analysis"</p>
+            <p id="button_description">"Open a file for analysis or select a previously started project"</p>
         </div>
     ))
 }
@@ -80,13 +100,8 @@ fn launch_empty_element(cx: Scope) -> Element {
                 let router = dioxus_router::use_router(cx);
                 router.navigate_to("/tool");
             }}>
-            <div class="tool-button-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px; viewBox: 0 0 32 32; fill:#fff;">
-                    <path id="svg-data" d="M26,28H6a2.0027,2.0027,0,0,1-2-2V6A2.0027,2.0027,0,0,1,6,4H16V6H6V26H26V16h2V26A2.0027,2.0027,0,0,1,26,28Z"/>
-                    <polygon id="svg-data" points="20 2 20 4 26.586 4 18 12.586 19.414 14 28 5.414 28 12 30 12 30 2 20 2"/>
-                </svg>
-            </div>
-            <p id="button_description">"Launch Empty"</p>
+            <p id="button_header">"Launch Empty"</p>
+            <p id="button_description">"Open an empty project"</p>
         </div>
     ))
 }
@@ -95,19 +110,29 @@ pub fn welcome_page(cx: Scope) -> Element {
     const VERSION: &str = env!("CARGO_PKG_VERSION");
     let outdated = is_outdated();
     let window = use_window(cx);
+
     window.set_resizable(false);
-    window.set_inner_size(LogicalSize::new(550, 400));
+    window.set_inner_size(LogicalSize::new(825, 500));
     cx.render(
         rsx!(
             style { include_str!("resources/styles/welcome-style.css") },
+            script { include_str!("resources/scripts/welcome.js") },
             html!(
-                <h1 id="welcome_message">"Marionette"</h1>
+                <h1 id="welcome-message">"Marionette"</h1>
                 <p id="descriptor">
                     <span>"Marionette is a disassembler "</span>
-                    <span id="underline_important_text">"study tool"</span>
+                    <span id="underline-important_text">"study tool"</span>
                     <span>" for reverse-engineering."</span>
                 </p>
-                {
+
+                <div class="container">
+                    <div class="row">
+                        { rsx!(launch_analysis_element {}) }
+                        { rsx!(launch_empty_element {}) }
+                    </div>
+                </div>
+                
+                /*{
                     if outdated {
                         html!(
                             <div class="container">
@@ -127,9 +152,9 @@ pub fn welcome_page(cx: Scope) -> Element {
                             </div>
                         )
                     }
-                }
+                    if outdated { latest_commit_element(cx) } else { html!() },
+                }*/
             ),
-            if outdated { latest_commit_element(cx) } else { html!() },
             html!(
                 <p id="version">"Version "{VERSION}""</p>
             )

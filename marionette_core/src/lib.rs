@@ -2,6 +2,7 @@
 // src\lib.rs
 
 pub mod byte_stream;
+pub mod mproj;
 
 mod lib {}
 
