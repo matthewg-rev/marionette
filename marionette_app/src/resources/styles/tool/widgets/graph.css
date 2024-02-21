@@ -1,0 +1,17 @@
+#widget > #graph-container {
+    --dot-size: 1px;
+
+    position: absolute;
+    visibility: hidden;
+    background: radial-gradient(
+        circle at var(--dot-size) var(--dot-size),
+
+        #9b9b9b calc(var(--dot-size) - 1px),
+        #0f0f0f var(--dot-size)
+    ) 0 0 / 20px 20px;
+    box-shadow: inset -2px 0px 0px 15px #0f0f0f;
+
+    top: 20px;
+    height: calc(100% - 20px);
+    width: 100%;
+}

@@ -1,5 +1,5 @@
 class Widget {
-    constructor(title, height, width) {
+    constructor(title, width, height) {
         this.height = height;
         this.width = width;
 

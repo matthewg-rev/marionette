@@ -1,6 +1,6 @@
 class ClockWidget extends Widget {
-    constructor(title, height, width) {
-        super(title, height, width);
+    constructor(title, width, height) {
+        super(title, width, height);
         this.clock = this.element.appendChild(document.createElement('div'));
         this.clock.id = 'clock';
         this.clock.innerHTML = '00:00:00';
