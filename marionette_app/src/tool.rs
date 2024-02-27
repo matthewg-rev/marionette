@@ -1,4 +1,4 @@
-use dioxus::prelude::*;
+use dioxus::{html::s, prelude::*};
 use dioxus_html_macro::html;
 use dioxus_desktop::{use_window};
 use crate::states::selector::SelectorState;
@@ -15,6 +15,14 @@ pub fn tool_page(cx: Scope) -> Element {
         style { include_str!("resources/styles/tool/widget.css") },
         style { include_str!("resources/styles/tool/widgets/graph.css") },
         style { include_str!("resources/styles/tool/widgets/clock.css") },
+
+        script { include_str!("resources/scripts/tool/graphing/graph.js") },
+        script { include_str!("resources/scripts/tool/graphing/graph_node.js") },
+        script { include_str!("resources/scripts/tool/graphing/line.js") },
+        script { include_str!("resources/scripts/tool/graphing/text.js") },
+
+        script { include_str!("resources/scripts/tool/graphing/renderer.js") },
+        script { include_str!("resources/scripts/tool/graphing/box_renderer.js") },
 
         script { include_str!("resources/scripts/tool/widget.js") },
         script { include_str!("resources/scripts/tool/widgets/graph.js") },

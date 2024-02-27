@@ -1,4 +1,4 @@
-#widget > #graph-container {
+#widget > #graph-canvas {
     --dot-size: 1px;
 
     position: absolute;
@@ -14,4 +14,36 @@
     top: 20px;
     height: calc(100% - 20px);
     width: 100%;
+}
+
+#widget > #graph-center-button {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    visibility: hidden;
+    top: 30px;
+    left: 10px;
+
+    font-family: 'NerdFontsSymbols Nerd Font', monospace;
+    font-weight: lighter;
+    font-size: 16px;
+
+    background: #202020;
+    color: #9b9b9b;
+
+    border: 1px solid #111111;
+    border-radius: 25%;
+
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+#widget > #graph-center-button:hover {
+    color: #bbbbbb;
+    border: 1px solid #484848;
 }
