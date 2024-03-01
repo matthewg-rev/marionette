@@ -1,9 +1,8 @@
 class Renderer {
-    constructor(node) {
-        this.node = node;
+    constructor() {
     }
 
-    render(widget, ctx) {
+    render(node, widget, ctx) {
         
     }
 }
