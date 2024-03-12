@@ -8,7 +8,8 @@ pub struct RawProject {
     // Metadata
     pub project_version: String,
 
-    pub raw_project: Vec<u8>,
+    pub remaining: Vec<u8>,
+    pub raw: Vec<u8>,
 }
 
 #[derive(Debug)]

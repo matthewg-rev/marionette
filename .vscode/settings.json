@@ -2,6 +2,7 @@
     "rust-analyzer.linkedProjects": [
         ".\\marionette_app\\Cargo.toml",
         ".\\marionette_core\\Cargo.toml",
+        ".\\marionette_core\\Cargo.toml",
         ".\\marionette_core\\Cargo.toml"
     ]
 }

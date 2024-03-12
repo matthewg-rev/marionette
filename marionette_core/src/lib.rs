@@ -9,16 +9,16 @@ mod lib {}
 #[cfg(test)]
 mod tests {
     use std::io::Write;
-    use crate::byte_stream::ByteStream;
+    use crate::{byte_stream::{ByteStream, ByteStreamWrite, ByteStreamRead}, mproj::RawProject};
     use super::*;
 
     #[test]
-    pub fn lua_disassemble() {
-        
-    }
-
-    #[test]
-    pub fn boxer_test() {
-        
+    pub fn proj_read_write() {
+        let mut stream = ByteStream::new(Vec::new());
+        let proj = mproj::MarionetteProject::new();
+        proj.write(&mut stream).unwrap();
+        stream = ByteStream::from(&stream);
+        let raw: RawProject = RawProject::read(&mut stream).unwrap();
+        println!("{:?}", raw.project_version);
     }
 }
