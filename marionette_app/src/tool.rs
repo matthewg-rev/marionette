@@ -3,7 +3,8 @@ use dioxus_html_macro::html;
 use dioxus_desktop::{use_window};
 use crate::states::selector::SelectorState;
 
-pub fn tool_page(cx: Scope) -> Element {
+#[component]
+pub fn Tool(cx: Scope) -> Element {
     let window = use_window(cx);
     window.set_resizable(true);
 

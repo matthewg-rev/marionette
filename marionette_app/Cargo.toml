@@ -6,18 +6,19 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dioxus = {git="https://github.com/DioxusLabs/dioxus.git", branch="master"}
-dioxus-desktop = {git="https://github.com/DioxusLabs/dioxus.git", branch="master"}
-dioxus-router = {git="https://github.com/DioxusLabs/dioxus.git", branch="master"}
+dioxus = {version="0.4.3"}
+dioxus-desktop = {version="0.4.3"}
+dioxus-router = {version="0.4.3"}
 dioxus-html-macro = "0.3.0"
 
-tokio={version="1.13.0", features=["full"]}
-octocrab="0.20.0"
-open="4.1.0"
+tokio={version="1.36.0", features=["full"]}
+octocrab="0.35.0"
+open="5.1.2"
 
-web-sys = "0.3.61"
+web-sys = "0.3.69"
+serde = "1.0.197"
 
-chrono = "0.4.24"
-futures-channel = "0.3.28"
-futures = "0.3.28"
+chrono = "0.4.35"
+futures-channel = "0.3.30"
+futures = "0.3.30"
 marionette_core = { path = "../marionette_core" }

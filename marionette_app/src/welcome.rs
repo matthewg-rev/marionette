@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_router::{Link, Router, Route, Redirect};
+use dioxus_router::prelude::*;
 use dioxus_desktop::{Config, LogicalSize, use_window, WindowBuilder};
 use dioxus_html_macro::*;
 
@@ -85,8 +85,9 @@ fn latest_commit_element(cx: Scope) -> LazyNodes {
 fn launch_analysis_element(cx: Scope) -> Element {
     cx.render(html!(
         <div class="tool-button-container" onclick={move |_| {
-                let router = dioxus_router::use_router(cx);
-                router.navigate_to("/open");
+                //let router = use_router(cx);
+                //router.navigate_to("/open");
+                use_navigator(cx).push(crate::Route::OpenTab { tab: 0 });
             }}>
             <p id="button_header">"Launch Analysis"</p>
             <p id="button_description">"Open a file for analysis or select a previously started project"</p>
@@ -97,8 +98,8 @@ fn launch_analysis_element(cx: Scope) -> Element {
 fn launch_empty_element(cx: Scope) -> Element {
     cx.render(html!(
         <div class="tool-button-container" onclick={move |_| {
-                let router = dioxus_router::use_router(cx);
-                router.navigate_to("/tool");
+                let navigator = use_navigator(cx);
+                navigator.push(crate::Route::Tool {});
             }}>
             <p id="button_header">"Launch Empty"</p>
             <p id="button_description">"Open an empty project"</p>
@@ -106,7 +107,8 @@ fn launch_empty_element(cx: Scope) -> Element {
     ))
 }
 
-pub fn welcome_page(cx: Scope) -> Element {
+#[component]
+pub fn Welcome(cx: Scope) -> Element {
     const VERSION: &str = env!("CARGO_PKG_VERSION");
     let outdated = is_outdated();
     let window = use_window(cx);

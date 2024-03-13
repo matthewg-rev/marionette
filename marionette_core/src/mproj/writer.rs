@@ -1,16 +1,11 @@
-use bincode::{Encode};
 use crate::mproj::MarionetteProject;
+use crate::byte_stream::{ByteStream, ByteStreamError, ByteStreamErrorType, ByteStreamRead, ByteStreamWrite};
 
-impl Encode for MarionetteProject {
-    fn encode<E: bincode::enc::Encoder>(
-        &self,
-        encoder: &mut E
-    ) -> core::result::Result<(), bincode::error::EncodeError> {
-        // for compatibility checking, the version of the project MUST be encoded first
-        bincode::Encode::encode(&self.project_version, encoder)?;
-
-        bincode::Encode::encode(&self.project_name, encoder)?;
-        bincode::Encode::encode(&self.project_files, encoder)?;
+impl ByteStreamWrite for MarionetteProject {
+    fn write(&self, stream: &mut ByteStream) -> Result<(), ByteStreamError> {
+        self.project_version.write(stream)?;
+        self.project_name.write(stream)?;
+        self.project_files.write(stream)?;
         Ok(())
     }
 }

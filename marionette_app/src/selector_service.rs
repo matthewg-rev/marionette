@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use dioxus::html::input_data::keyboard_types::Code;
 use dioxus::prelude::*;
-use dioxus_router::{use_route, use_router};
+use dioxus_router::prelude::*;
 use dioxus_desktop::{LogicalSize, use_window};
 use dioxus_html_macro::*;
 use crate::states::explorer::{ExplorerState, FileEntry};
@@ -239,7 +239,7 @@ pub fn explorer_container(cx: Scope) -> Element {
 }
 
 pub fn bottom_bar_container(cx: Scope) -> Element {
-    let router = use_router(cx);
+    let navigator = use_navigator(cx);
     let selector_state = use_shared_state::<SelectorState>(cx).unwrap();
 
     let bottom_bar = html!(
@@ -257,14 +257,14 @@ pub fn bottom_bar_container(cx: Scope) -> Element {
             <div
                 class="bottom_button"
                 onclick={ move |_| {
-                    router.navigate_to("/")
+                    navigator.push(crate::Route::Welcome {});
                 }
             }>"Cancel"</div>
 
             <div
                 class="bottom_button"
                 onclick={ move |_| {
-                    router.navigate_to("/tool");
+                    navigator.push(crate::Route::Tool {});
                 }
             }>"Analyze"</div>
         </div>
@@ -273,34 +273,37 @@ pub fn bottom_bar_container(cx: Scope) -> Element {
 }
 
 pub fn header_container(cx: Scope) -> Element {
-    let router = use_router(cx);
-    let route = use_route(cx);
-    let tab_str = route.segment("tab").unwrap_or("none");
+    let navigator = use_navigator(cx);
+    let route: crate::Route = use_route(cx).unwrap();
+    let tab_str = match route {
+        crate::Route::OpenTab { tab } => tab,
+        _ => 0
+    };
 
     let header = html!(
         <div class="header">
             <div id={
-                if tab_str == "none" { "underline_important_text" } else { "" }
+                if tab_str == 0 { "underline_important_text" } else { "" }
             } class="tab_button" onclick={
                 move |_| {
-                    router.navigate_to("/open/");
+                    navigator.push(crate::Route::OpenTab { tab: 0 });
                 }
             }>"Analysis Selector"</div>
 
             <div id="tab_container">
                 <div id={
-                    if tab_str == "projects" { "underline_important_text" } else { "" }
+                    if tab_str == 1 { "underline_important_text" } else { "" }
                 } class="tab_button" onclick={
                     move |_| {
-                        router.navigate_to("/open/projects");
+                        navigator.push(crate::Route::OpenTab { tab: 1 });
                     }
                 }>"Projects"</div>
 
                 <div id={
-                    if tab_str == "files" { "underline_important_text" } else { "" }
+                    if tab_str == 2 { "underline_important_text" } else { "" }
                 } class="tab_button" onclick={
                     move |_| {
-                        router.navigate_to("/open/files");
+                        navigator.push(crate::Route::OpenTab { tab: 2 });
                     }
                 }>"Files"</div>
             </div>
@@ -309,14 +312,18 @@ pub fn header_container(cx: Scope) -> Element {
     render!(header)
 }
 
-pub fn analysis_selector(cx: Scope) -> Element {
+#[component]
+pub fn OpenTab(cx: Scope, tab: usize) -> Element {
     let window = use_window(cx);
     window.set_title("Marionette Analysis Selector");
     window.set_resizable(true);
     window.set_min_inner_size(Some(LogicalSize::new(450, 300)));
 
-    let route = use_route(cx);
-    let tab_str = route.segment("tab").unwrap_or("none");
+    let route: crate::Route = use_route(cx).unwrap();
+    let tab_str = match route {
+        crate::Route::OpenTab { tab } => tab,
+        _ => 0
+    };
 
     cx.render(rsx!(
         style { include_str!("resources/styles/analysis-selector/analysis-selector.css") }
@@ -324,8 +331,8 @@ pub fn analysis_selector(cx: Scope) -> Element {
             { rsx! { header_container {} } }
             {
                 match tab_str {
-                    "projects" => rsx! { projects_container {} },
-                    "files" => rsx! { explorer_container {} },
+                    1 => rsx! { projects_container {} },
+                    2 => rsx! { explorer_container {} },
                     _ => html!(
                         <div class="repeating_diagonal_lines"></div>
                     )

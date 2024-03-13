@@ -16,15 +16,6 @@ impl ByteStreamRead for RawProject {
     }
 }
 
-impl ByteStreamWrite for MarionetteProject {
-    fn write(&self, stream: &mut ByteStream) -> Result<(), ByteStreamError> {
-        self.project_version.write(stream)?;
-        self.project_name.write(stream)?;
-        self.project_files.write(stream)?;
-        Ok(())
-    }
-}
-
 impl ByteStreamRead for MarionetteProject {
     fn read(stream: &mut ByteStream) -> Result<Self, ByteStreamError> {
         let project_version = String::read(stream)?;

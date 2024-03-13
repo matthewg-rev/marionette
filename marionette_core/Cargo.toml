@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 rand="0.8.5"
-bincode = "2.0.0-rc.3"
 libloading = "0.8.0"
 serde = "1.0.163"
 serde_json = { version = "1.0.96", features = ["preserve_order"] }

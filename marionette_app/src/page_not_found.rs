@@ -1,7 +1,8 @@
 use dioxus::prelude::*;
 use dioxus_html_macro::*;
 
-pub fn page_not_found(cx: Scope) -> Element {
+#[component]
+pub fn NotFound(cx: Scope) -> Element {
     cx.render(rsx!(
         style { include_str!("resources/styles/page-not-found/page-not-found.css") },
         html!(
