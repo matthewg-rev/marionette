@@ -128,6 +128,9 @@ class GraphWidget extends Widget {
         this.camera.lastZoom = this.camera.zoom;
     }
 
+    // if im on my thinkpad laptop the way to zoom is different
+    // draw your two fingers downwards or up, not pinch like on
+    // touch screens
     containerMouseWheel(e) {
         var isTouchPad = e.wheelDeltaY ? e.wheelDeltaY === -3 * e.deltaY : e.deltaMode === 0;
         this.states.trackpad.flag = isTouchPad;

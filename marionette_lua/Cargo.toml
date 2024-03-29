@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 marionette_core = { path = "../marionette_core" }
 chumsky = "1.0.0-alpha.6"
+logos = "0.14.0"
