@@ -10,7 +10,9 @@ class GraphWidget extends Widget {
         this.centerButton.innerHTML = '󰆤';
 
         this.ctx = this.container.getContext('2d');
-        this.graph = new Graph();
+
+        this.renderer = new BoxRenderer();
+        this.graph = Graph.random();
 
         this.binds['containerMouseDown'] = this.containerMouseDown.bind(this);
         this.binds['containerMouseMove'] = this.containerMouseMove.bind(this);
@@ -90,7 +92,7 @@ class GraphWidget extends Widget {
             this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
             if (this.graph.root) {
-                this.graph.renderer.render(this.graph.root, this, this.ctx);
+                this.renderer.render(this.graph, this, this.ctx);
             }
         }
 

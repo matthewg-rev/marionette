@@ -1,51 +1,39 @@
 class Graph {
     constructor() {
         this.nodes = [];
-        this.renderer = new BoxRenderer();
-        this.root = new GraphNode(this);
-
-        //this.root.edges.push(new GraphNode());
-        //this.root.edges.push(new GraphNode());
-        //this.root.edges[0].push(new GraphNode());
-        //this.root.renderer = new BoxRenderer(this.root);
+        this.edges = [];
+        this.root = new GraphVertex(this);
     }
 
-    randomize() {
-        if (this.root == null) this.root = new GraphNode(this);
+    static random() {
+        let graph = new Graph();
+        let nodes = Math.floor(Math.random() * 10) + 1;
 
-        currentQueue = [this.root];
-        nextQueue = [];
-        nodeCount = Math.floor(Math.random() * 20);
-
-        while (currentQueue.length > 0 && nodeCount > 0) {
-            current = currentQueue.pop();
-            let numEdges = Math.floor(Math.random() * 3);
-            for (let i = 0; i < numEdges; i++) {
-                let newNode = new GraphNode();
-                current.edges.push(newNode);
-                nextQueue.push(newNode);
-                nodeCount--;
+        let current = graph.root;
+        for (let i = 0; i < nodes; i++) {
+            let node = new GraphVertex(graph);
+            graph.edges.push(new GraphEdge(current, node));
+            if (Math.random() > 0.5) {
+                current = node;
             }
         }
+
+        return graph;
     }
 
-    layerOrdering() {
-        let layers = [];
-        let nextQueue = [this.root];
-        let currentQueue = [];
+    updateIdentifiers() {
+        this.nodes.forEach((node, index) => {
+            node.id = index;
+        });
+    }
 
-        while (nextQueue.length > 0) {
-            currentQueue = nextQueue;
-            nextQueue = [];
-
-            let layer = [];
-            for (let i = 0; i < currentQueue.length; i++) {
-                let node = currentQueue[i];
-                layer.push(node);
-                nextQueue = nextQueue.concat(node.edges);
+    verifyIntegrity() {
+        let valid = true;
+        this.nodes.forEach((node) => {
+            if (node.id === -1) {
+                valid = false;
             }
-
-            layers.push(layer);
-        }
+        });
+        return valid;
     }
 }
