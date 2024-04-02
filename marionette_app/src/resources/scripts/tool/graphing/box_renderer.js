@@ -2,6 +2,10 @@
 class BoxRenderer extends GraphRenderer {
     constructor() {
         super();
+
+        this.graph = null;
+        this.root = null;
+
         this.vertexRenderer = new BoxVertexRenderer();
         this.edgeRenderer = new BoxEdgeRenderer();
         this.drawingData = {
@@ -10,38 +14,55 @@ class BoxRenderer extends GraphRenderer {
         }
     }
 
-    render(graph, widget, ctx) {
-        if (this.graph != graph) {
-            this.graph = graph;
-            this.root = graph.root;
-        }
+    preprocess(ctx, data) {
+        let updateIfNewGraph = (graph) => {
+            if (this.graph != graph) {
+                this.graph = graph;
+                this.root = graph.root;
+                this.drawingData = { vertexData: [], edgeData: [] };
+                this.vertexRenderer.drawingData = [];
+                this.edgeRenderer.drawingData = [];
+                this.graph.updateIdentifiers();
+            }
+        };
 
-        graph.updateIdentifiers();
-        if (graph.verifyIntegrity()) {
-            var g = new dagre.graphlib.Graph();
-            g.setGraph({
-                
-            });
-            g.setDefaultEdgeLabel(() => ({}));
+        let preprocessGraph = () => {
+            if (this.graph.verifyIntegrity()) {
+                var g = new dagre.graphlib.Graph();
+                g.setGraph({});
+                g.setDefaultEdgeLabel(() => ({}));
+    
+                this.graph.nodes.forEach((node) => {
+                    let metrics = this.vertexRenderer.metrics(ctx, node);
+                    let width = metrics.vertex.width;
+                    let height = metrics.vertex.height;
 
-            graph.nodes.forEach((node) => {
-                let {width, height} = this.vertexRenderer.vertexSize(node, ctx);
-                g.setNode(node.id.toString(), {width: width, height: height});
-            });
+                    g.setNode(node.id.toString(), {width: width, height: height});
+                });
+    
+                this.graph.edges.forEach((edge) => {
+                    g.setEdge(edge.source.id.toString(), edge.target.id.toString());
+                });
+    
+                dagre.layout(g);
+                return g;
+            }
+            return null;
+        };
 
-            graph.edges.forEach((edge) => {
-                console.log(edge);
-                g.setEdge(edge.source.id.toString(), edge.target.id.toString());
-            });
+        let preprocessVertices = (g) => {
+            if (this.drawingData.vertexData.length > 0) return;
 
-            dagre.layout(g);
             g.nodes().forEach((v) => {
-                let node = graph.nodes.find((n) => n.id == v);
+                let node = this.graph.nodes.find((n) => n.id == v);
                 let nodeInfo = g.node(v);
                 let nodeX = nodeInfo.x;
                 let nodeY = nodeInfo.y;
 
-                let {width, height} = this.vertexRenderer.vertexSize(node, ctx);
+                let metrics = this.vertexRenderer.metrics(ctx, node);
+                let width = metrics.vertex.width;
+                let height = metrics.vertex.height;
+
                 this.drawingData.vertexData.push({
                     vertex: node,
                     x: nodeX,
@@ -51,163 +72,339 @@ class BoxRenderer extends GraphRenderer {
                 });
             });
 
+            this.vertexRenderer.preprocess(ctx, this.drawingData.vertexData);
+        };
+
+        let preprocessEdges = (g) => {
+            if (this.drawingData.edgeData.length > 0) return;
             g.edges().forEach((e) => {
                 let points = g.edge(e);
-                let edge = graph.edges.find((edge) => edge.source.id == parseInt(e.v) && edge.target.id == parseInt(e.w));
+                let edge = this.graph.edges.find((edge) => edge.source.id == parseInt(e.v) && edge.target.id == parseInt(e.w));
                 let source = this.drawingData.vertexData.find((v) => v.vertex.id == edge.source.id);
                 let target = this.drawingData.vertexData.find((v) => v.vertex.id == edge.target.id);
-
-                this.edgeRenderer.render(source, target, widget, ctx);
                 this.drawingData.edgeData.push({source: source, target: target});
             });
 
-            g.nodes().forEach((v) => {
-                let node = graph.nodes.find((n) => n.id == v);
-                let nodeInfo = g.node(v);
-                let nodeX = nodeInfo.x;
-                let nodeY = nodeInfo.y;
+            this.edgeRenderer.preprocess(ctx, this.drawingData.edgeData);
+        };
 
-                this.vertexRenderer.render(node, widget, ctx, nodeX, nodeY)
-            });
+        updateIfNewGraph(data);
+        let g = preprocessGraph(this.graph);
+        if (g) {
+            preprocessVertices(g);
+            preprocessEdges(g);
         } else {
-            console.log("temporary error message");
+            // TODO: Prepare ErrorRenderer
         }
+    }
+
+    render(ctx, widget) {
+        this.edgeRenderer.render(ctx, widget);
+        this.vertexRenderer.render(ctx, widget);
     }
 }
 
 class BoxEdgeRenderer extends EdgeRenderer {
     constructor() {
         super();
-        this.lineSize = 2;
-        this.drawnEdges = []; // TODO: Fix stupid paths
-        // I can probably fix this by pre-sending all the edges to the renderer, then telling the renderer to 
-        // draw them all at once after the pre-processing is done to determine how to spread each start point and end point
-        // alone the top of the source, and the bottom of the target.
-        this.lineColor = "#9b9b9b";
+        this.vertexInfo = [];
     }
 
-    render(source, target, widget, ctx) {
-        ctx.strokeStyle = this.lineColor;
-        ctx.lineWidth = this.lineSize;
-        ctx.beginPath();
-        
-        let sourceX = source.x;
-        let sourceY = source.y + (source.height/2);
+    preprocess(ctx, data) {
+        data.forEach((edge) => {
+            let source = edge.source;
 
-        let targetX = target.x;
-        let targetY = target.y - (target.height/2);
+            // (* check if the source is already in the vertex info array *)
+            let sourceInfo = this.vertexInfo.find((info) => info.source.vertex.id == source.vertex.id);
+            
+            // (* if the source is not in the vertex info array, add it *)
+            if (!sourceInfo) {
+                sourceInfo = {
+                    source: source,
+                    sourceMidX: source.x,
+                    sourceBottomY: source.y + (source.height/2),
 
-        let distanceY = targetY - sourceY;
+                    targets: [
+                        {
+                            target: edge.target,
+                            targetMidX: edge.target.x,
+                            targetTopY: edge.target.y - (edge.target.height/2)
+                        }
+                    ]
+                };
 
-        ctx.moveTo(sourceX, sourceY);
-        ctx.lineTo(sourceX, sourceY + (distanceY/2));
-        ctx.moveTo(sourceX, sourceY + (distanceY/2));
-        ctx.lineTo(targetX, sourceY + (distanceY/2));
-        ctx.moveTo(targetX, sourceY + (distanceY/2));
-        ctx.lineTo(targetX, targetY);
+                this.vertexInfo.push(sourceInfo);
+            } else {
+                sourceInfo.targets.push({
+                    target: edge.target,
+                    targetMidX: edge.target.x,
+                    targetTopY: edge.target.y - (edge.target.height/2)
+                });
+            }
+        });
+    }
 
-        ctx.stroke();
+    render(ctx, widget) {
+        let drawPoint = (x, y) => { // for debugging
+            ctx.strokeStyle = EdgeRenderer.Config().COLORS.COLOR_DIRECT;
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, 2 * Math.PI);
+            ctx.stroke();
+        };
+
+        let drawLine = (startX, startY, endX, endY, color) => {
+            // TODO: make it avoid going through vertices, also adjust size
+            let distanceY = endY - startY;
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = EdgeRenderer.Config().SIZES.SIZE_LINE;
+            ctx.beginPath();
+
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(startX, startY + (distanceY/2));
+            ctx.moveTo(startX, startY + (distanceY/2));
+            ctx.lineTo(endX, startY + (distanceY/2));
+            ctx.moveTo(endX, startY + (distanceY/2));
+            ctx.lineTo(endX, endY);
+
+            ctx.stroke();
+        };
+
+        this.vertexInfo.forEach((sourceInfo) => {
+            let numTargets = sourceInfo.targets.length;
+            let remainder = numTargets % 2;
+
+            if (numTargets == 1) {
+                let target = sourceInfo.targets[0];
+                drawLine(
+                    sourceInfo.sourceMidX, 
+                    sourceInfo.sourceBottomY, 
+                    target.targetMidX, 
+                    target.targetTopY, 
+                    EdgeRenderer.Config().COLORS.COLOR_DIRECT
+                );
+            } else {
+                let evened = numTargets - remainder;
+                let half = (evened / 2);
+
+                let sourceX = sourceInfo.sourceMidX;
+                let sourceY = sourceInfo.sourceBottomY;
+
+                let left = sourceX - (sourceInfo.source.width/2);
+                let right = sourceX + (sourceInfo.source.width/2);
+
+                let padding = sourceInfo.source.width * EdgeRenderer.Config().PADDING.PADDING_BETWEEN_EDGES;
+                sourceX -= (padding * half);
+
+                for (let i = 0; i < half; i++) {
+                    let target = sourceInfo.targets[i];
+                    drawLine(
+                        sourceX, 
+                        sourceY, 
+                        target.targetMidX, 
+                        target.targetTopY, 
+                        EdgeRenderer.Config().COLORS.COLOR_TRUE
+                    );
+                    sourceX += padding;
+                }
+
+                sourceX = sourceInfo.sourceMidX;
+                if (remainder == 1) {
+                    let target = sourceInfo.targets[half];
+                    drawLine(
+                        sourceX, 
+                        sourceY, 
+                        target.targetMidX, 
+                        target.targetTopY, 
+                        EdgeRenderer.Config().COLORS.COLOR_DIRECT
+                    );
+                }
+                
+                sourceX += (padding * half);
+                for (let i = half; i < numTargets; i++) {
+                    let target = sourceInfo.targets[i];
+                    drawLine(
+                        sourceX, 
+                        sourceY, 
+                        target.targetMidX, 
+                        target.targetTopY, 
+                        EdgeRenderer.Config().COLORS.COLOR_FALSE
+                    );
+                    sourceX -= padding;
+                }
+            }
+        });
     }
 }
 
 class BoxVertexRenderer extends VertexRenderer {
     constructor() {
         super();
-
-        this.size = 16;
-        this.linePadding = 5;
-        this.borderSize = 1;
-        this.boxPadding = {
-            x: 10,
-            y: 20
-        }
-        this.boxShadow = 1;
-
-        this.shadowOffset = 4;
-        this.shadowBlur = 0;
-
-        this.boxColors = {
-            border: "#9b9b9b",
-            background: "#0f0f0f",
-            shadow: "#080808"
-        }
+        this.drawingData = [];
     }
 
-    longestText(ctx, text) {
-        let longest = null;
-        text.forEach((t) => {
-            let metrics = ctx.measureText(t.raw());
-            if (!longest || metrics.width > longest.width) {
-                longest = metrics;
+    metrics(ctx, vertex) {
+        // (* calculate content height in px, and the longest width line in content *)
+        let metrics = { 
+            content: {
+                fontHeight: 0, maximumWidth: 0, widestLine: null 
+            },
+            vertex: {
+                width: 0, height: 0
+            }
+        };
+
+        // (* set appropriate font size and family according to config *)
+        ctx.font = VertexRenderer.Config().SIZES.SIZE_TEXT 
+            + "px "
+            + VertexRenderer.Config().FONTS.FONT_CONTENT;
+
+        // (* get the widest line in the content provided *)
+        vertex.content.forEach((line) => {
+            let width = 0;
+            line.content.forEach((text) => {
+                width += ctx.measureText(text.content).width;
+            });
+
+            if (metrics.content.widestLine == null || width > metrics.content.maximumWidth) {
+                metrics.content.widestLine = ctx.measureText(line.raw());
+                metrics.content.maximumWidth = width;
             }
         });
-        return longest;
+        
+        // (* calculate the height of the font *)
+        metrics.content.fontHeight = metrics.content.widestLine.actualBoundingBoxAscent 
+            + metrics.content.widestLine.actualBoundingBoxDescent;
+
+        // (* retrieve the width of the widest line *)
+        metrics.content.maximumWidth = metrics.content.widestLine.width;
+
+        // (* calculate the width and height of the vertex *)
+        metrics.vertex.width = metrics.content.maximumWidth + (VertexRenderer.Config().PADDING.PADDING_BOX_HORIZONTAL * 2);
+        metrics.vertex.height = ((metrics.content.fontHeight + VertexRenderer.Config().PADDING.PADDING_LINE) 
+            * (vertex.content.length - 1)) 
+            + (VertexRenderer.Config().PADDING.PADDING_BOX_VERTICAL * 2);
+        
+        // (* return the metrics *)
+        return metrics;
     }
 
-    vertexSize(vertex, ctx) {
-        ctx.font = this.size + "px Consolas";
-        let metrics = this.longestText(ctx, vertex.content);
-        let textHeight = this.textHeight(vertex, ctx);
+    preprocess(ctx, data) {
+        let preprocessContent = (startX, startY, metrics, content) => {
+            let lines = [];
+            let textHeight = metrics.content.fontHeight;
+            let width = metrics.vertex.width;
+            let height = metrics.vertex.height;
 
-        let width = metrics.width + (this.boxPadding.x * 2);
-        let height = ((textHeight + this.linePadding) * (vertex.content.length-1)) + (this.boxPadding.y * 2);
-        return {width, height};
+            // (* draw each line's text respecting padding and line height *)
+            content.forEach((line, i) => {
+                // (* calculate the y position of the line *)
+                let y = startY 
+                    + VertexRenderer.Config().PADDING.PADDING_BOX_VERTICAL 
+                    + (i * textHeight) 
+                    + (VertexRenderer.Config().PADDING.PADDING_LINE * (i+1));
+
+                let lineData = {y: y, content: []};
+                
+                if (line instanceof Line) {
+                    // (* calculate the x position of the line *)
+                    let x = startX + VertexRenderer.Config().PADDING.PADDING_BOX_HORIZONTAL;
+
+                    line.content.forEach((text, j) => {
+                        // (* push the text data to the line data *)
+                        lineData.content.push([
+                            text.color, 
+                            text.content, 
+                            x
+                        ]);
+
+                        // (* increment the x position *)
+                        x += ctx.measureText(text.content).width;
+                    });
+                }
+                
+                // (* push the line data to the lines array *)
+                lines.push(lineData);
+            });
+
+            // (* return the lines *)
+            return lines;
+        };
+
+        let preprocessVertex = (vertex) => {
+            // (* calculate the metrics for the vertex *)
+            let metrics = this.metrics(ctx, vertex.vertex);
+            let x = vertex.x;
+            let y = vertex.y;
+
+            // (* center the vertex if the config is set to do so *)
+            if (VertexRenderer.Config().RENDERING.VERTEX_CENTERING) {
+                x -= metrics.vertex.width / 2;
+                y -= metrics.vertex.height / 2;
+            }
+
+            // (* preprocess the content of the vertex *)
+            let lines = preprocessContent(x, y, metrics, vertex.vertex.content);
+
+            // (* push the data to the drawing data *)
+            this.drawingData.push({
+                dagre_vertex: vertex,
+                vertex: vertex.vertex,
+
+                x: x,
+                y: y,
+                
+                lines: lines,
+                metrics: metrics
+            });
+        }
+
+        data.forEach((vertex) => {
+            // (* preprocess each vertex *)
+            preprocessVertex(vertex);
+        });
     }
 
-    textHeight(vertex, ctx) {
-        ctx.font = this.size + "px Consolas";
-        let metrics = this.longestText(ctx, vertex.content);
-        return metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-    }
+    render(ctx, widget) {
+        this.drawingData.forEach((vertex) => {
+            { // (* draw the box for the vertex *)
+                // (* set the shadow properties *)
+                ctx.shadowColor = VertexRenderer.Config().COLORS.COLOR_SHADOW;
+                ctx.shadowOffsetX = (VertexRenderer.Config().OFFSETS.OFFSET_SHADOW) * widget.camera.zoom;
+                ctx.shadowOffsetY = (VertexRenderer.Config().OFFSETS.OFFSET_SHADOW) * widget.camera.zoom;
+                ctx.shadowBlur = VertexRenderer.Config().SIZES.SIZE_SHADOW;
 
-    renderContents(vertex, ctx, vertexX, vertexY) {
-        let textHeight = this.textHeight(vertex, ctx);
-        // draw each line's text respecting padding and line height
-        vertex.content.forEach((l, i) => {
-            if (l instanceof Line) {
-                let nextX = vertexX + this.boxPadding.x;
-                l.content.forEach((t, j) => {
-                    ctx.fillStyle = t.color;
-                    ctx.fillText(
-                        t.content, 
-                        nextX, 
-                        vertexY + this.boxPadding.y
-                            + (i * textHeight) 
-                            + (this.linePadding * (i+1))
-                    );
-                    nextX += ctx.measureText(t.content).width;
+                // (* draw the border of the vertex *)
+                ctx.fillStyle = VertexRenderer.Config().COLORS.COLOR_BORDER;
+                ctx.fillRect(
+                    vertex.x - VertexRenderer.Config().SIZES.SIZE_BORDER, 
+                    vertex.y - VertexRenderer.Config().SIZES.SIZE_BORDER, 
+                    vertex.metrics.vertex.width + (VertexRenderer.Config().SIZES.SIZE_BORDER*2), 
+                    vertex.metrics.vertex.height + (VertexRenderer.Config().SIZES.SIZE_BORDER*2)
+                );
+
+                // (* set the shadow color to transparent *)
+                ctx.shadowColor = "transparent";
+
+                // (* draw the background of the vertex *)
+                ctx.fillStyle = VertexRenderer.Config().COLORS.COLOR_BACKGROUND;
+                ctx.fillRect(vertex.x, vertex.y, vertex.metrics.vertex.width, vertex.metrics.vertex.height);
+            }
+
+            { // (* draw the text for the vertex *)
+                // (* set the font properties *)
+                ctx.font = VertexRenderer.Config().SIZES.SIZE_TEXT 
+                    + "px " 
+                    + VertexRenderer.Config().FONTS.FONT_CONTENT;
+                
+                // (* draw each line of text *)
+                vertex.lines.forEach((line) => {
+                    line.content.forEach((text) => {
+                        ctx.fillStyle = text[0];
+                        ctx.fillText(text[1], text[2], line.y);
+                    });
                 });
             }
         });
-    }
-
-    renderBox(widget, ctx, vertexX, vertexY, width, height) {
-        ctx.shadowColor = this.boxColors.shadow;
-        ctx.shadowOffsetX = (this.shadowOffset) * widget.camera.zoom;
-        ctx.shadowOffsetY = (this.shadowOffset) * widget.camera.zoom;
-        ctx.shadowBlur = this.shadowBlur;
-
-        ctx.fillStyle = this.boxColors.border;
-        ctx.fillRect(
-            vertexX - this.borderSize, 
-            vertexY - this.borderSize, 
-            width + (this.borderSize*2), 
-            height + (this.borderSize*2)
-        );
-
-        ctx.shadowColor = "transparent";
-
-        ctx.fillStyle = this.boxColors.background;
-        ctx.fillRect(vertexX, vertexY, width, height);
-    }
-    
-    render(vertex, widget, ctx, vertexX, vertexY) {
-        // calculate width and height based on vertex.content
-        let {width, height} = this.vertexSize(vertex, ctx);
-
-        this.renderBox(widget, ctx, vertexX-(width/2), vertexY-(height/2), width, height);
-        this.renderContents(vertex, ctx, vertexX-(width/2), vertexY-(height/2));
-
-        return {vertex: vertex, x: vertexX, y: vertexY, width: width, height: height};
     }
 }

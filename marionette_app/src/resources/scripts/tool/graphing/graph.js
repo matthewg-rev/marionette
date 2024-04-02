@@ -13,7 +13,8 @@ class Graph {
         for (let i = 0; i < nodes; i++) {
             let node = new GraphVertex(graph);
             graph.edges.push(new GraphEdge(current, node));
-            if (Math.random() > 0.5) {
+            let edges = graph.edges.filter((edge) => edge.source === current);
+            if (Math.random() > 0.5 || edges.length == 2) {
                 current = node;
             }
         }

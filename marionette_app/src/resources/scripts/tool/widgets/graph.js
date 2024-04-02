@@ -47,6 +47,10 @@ class GraphWidget extends Widget {
         this.onExpand['graph'] = () => {
             this.container.style.visibility = this.flags.expanded ? 'visible' : 'hidden';
             this.centerButton.style.visibility = this.flags.expanded ? 'visible' : 'hidden';
+            
+            this.centerButton.style.opacity = this.flags.expanded ? '1' : '0';
+            this.centerButton.style.width = this.flags.expanded ? '40px' : '0px';
+            this.centerButton.style.height = this.flags.expanded ? '40px' : '0px';
 
             if (this.flags.expanded) {
                 this.container.addEventListener('mousedown', this.binds.containerMouseDown);
@@ -92,7 +96,8 @@ class GraphWidget extends Widget {
             this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
             if (this.graph.root) {
-                this.renderer.render(this.graph, this, this.ctx);
+                this.renderer.preprocess(this.ctx, this.graph);
+                this.renderer.render(this.ctx, this);
             }
         }
 
