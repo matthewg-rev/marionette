@@ -14,6 +14,13 @@ class BoxRenderer extends GraphRenderer {
         }
     }
 
+    drawPoint(ctx, x, y) { // for debugging
+        ctx.strokeStyle = "#ff0000";
+        ctx.beginPath();
+        ctx.arc(x, y, 10, 0, 2 * Math.PI);
+        ctx.stroke();
+    }
+
     preprocess(ctx, data) {
         let updateIfNewGraph = (graph) => {
             if (this.graph != graph) {
@@ -93,14 +100,48 @@ class BoxRenderer extends GraphRenderer {
         if (g) {
             preprocessVertices(g);
             preprocessEdges(g);
+            this.drawPoint(ctx, 0, 0); // for debugging
         } else {
             // TODO: Prepare ErrorRenderer
         }
     }
 
+    select(ctx, location) {
+        this.drawPoint(ctx, location.x, location.y); // for debugging
+        // (* find any vertex that is selected                          *)
+        let vertex = this.drawingData.vertexData.find((vertex) => {
+            return vertex.vertex.selected;
+        });
+        
+        // (* if a vertex is selected, deselect it                      *)
+        if (vertex) {
+            vertex.vertex.selected = false;
+        }
+
+        // (* find any vertex that contains the location                *)
+        vertex = this.drawingData.vertexData.find((vertex) => {
+            // (* vertex.x and vertex.y are the midpoints of the vertex *)
+            let x = vertex.x;
+            let y = vertex.y;
+            let width = vertex.width;
+            let height = vertex.height;
+            let x1 = x - (width/2);
+            let x2 = x + (width/2);
+            let y1 = y - (height/2);
+            let y2 = y + (height/2);
+
+            return location.x >= x1 && location.x <= x2 && location.y >= y1 && location.y <= y2;
+        });
+
+        // (* if a vertex is found, select it                           *)
+        if (vertex) {
+            vertex.vertex.selected = true;
+        }
+    }
+
     render(ctx, widget) {
         this.edgeRenderer.render(ctx, widget);
-        this.vertexRenderer.render(ctx, widget);
+        this.vertexRenderer.render(ctx, widget);   
     }
 }
 
@@ -127,8 +168,12 @@ class BoxEdgeRenderer extends EdgeRenderer {
                     targets: [
                         {
                             target: edge.target,
+
                             targetMidX: edge.target.x,
-                            targetTopY: edge.target.y - (edge.target.height/2)
+                            targetMidY: edge.target.y,
+
+                            targetTopY: edge.target.y - (edge.target.height/2),
+                            targetBottomY: edge.target.y + (edge.target.height/2)
                         }
                     ]
                 };
@@ -137,8 +182,12 @@ class BoxEdgeRenderer extends EdgeRenderer {
             } else {
                 sourceInfo.targets.push({
                     target: edge.target,
+
                     targetMidX: edge.target.x,
-                    targetTopY: edge.target.y - (edge.target.height/2)
+                    targetMidY: edge.target.y,
+
+                    targetTopY: edge.target.y - (edge.target.height/2),
+                    targetBottomY: edge.target.y + (edge.target.height/2)
                 });
             }
         });
@@ -152,20 +201,53 @@ class BoxEdgeRenderer extends EdgeRenderer {
             ctx.stroke();
         };
 
-        let drawLine = (startX, startY, endX, endY, color) => {
-            // TODO: make it avoid going through vertices, also adjust size
-            let distanceY = endY - startY;
+        let drawLine = (source, target, startX, startY, endMidX, endMidY, color) => {
+            let linePadding = EdgeRenderer.Config().PADDING.PADDING_LINE;
+            let above = startY > endMidY;
+            let below = startY < endMidY;
+            let left = startX > endMidX;
+            let right = startX < endMidX;
+            let endY = above ? target.targetTopY : target.targetBottomY;
 
             ctx.strokeStyle = color;
             ctx.lineWidth = EdgeRenderer.Config().SIZES.SIZE_LINE;
             ctx.beginPath();
 
+            let bendStartY = startY + linePadding;
+
             ctx.moveTo(startX, startY);
-            ctx.lineTo(startX, startY + (distanceY/2));
-            ctx.moveTo(startX, startY + (distanceY/2));
-            ctx.lineTo(endX, startY + (distanceY/2));
-            ctx.moveTo(endX, startY + (distanceY/2));
-            ctx.lineTo(endX, endY);
+            ctx.lineTo(startX, bendStartY);
+            ctx.moveTo(startX, bendStartY);
+
+            if (above) {
+                
+                let horizontalDistance = (source.x + (source.width/2)) - startX;
+
+                let newX = startX;
+                if (left) newX = startX + horizontalDistance;
+                if (right) newX = startX - horizontalDistance;
+
+                ctx.lineTo(newX, bendStartY);
+                ctx.moveTo(newX, bendStartY);
+
+                newX = startX + horizontalDistance + linePadding;
+                ctx.lineTo(newX, bendStartY);
+                ctx.moveTo(newX, bendStartY);
+
+                let verticalY = endY - linePadding;
+                ctx.lineTo(newX, verticalY);
+                ctx.moveTo(newX, verticalY);
+                ctx.lineTo(endMidX, verticalY);
+                ctx.moveTo(endMidX, verticalY);
+            } else {
+                ctx.lineTo(startX, bendStartY);
+                ctx.moveTo(startX, bendStartY);
+
+                ctx.lineTo(endMidX, bendStartY);
+                ctx.moveTo(endMidX, bendStartY);
+            }
+
+            ctx.lineTo(endMidX, endY);
 
             ctx.stroke();
         };
@@ -177,10 +259,13 @@ class BoxEdgeRenderer extends EdgeRenderer {
             if (numTargets == 1) {
                 let target = sourceInfo.targets[0];
                 drawLine(
+                    sourceInfo.source,
+                    target,
+
                     sourceInfo.sourceMidX, 
                     sourceInfo.sourceBottomY, 
                     target.targetMidX, 
-                    target.targetTopY, 
+                    target.targetMidY, 
                     EdgeRenderer.Config().COLORS.COLOR_DIRECT
                 );
             } else {
@@ -199,10 +284,13 @@ class BoxEdgeRenderer extends EdgeRenderer {
                 for (let i = 0; i < half; i++) {
                     let target = sourceInfo.targets[i];
                     drawLine(
+                        sourceInfo.source,
+                        target,
+
                         sourceX, 
                         sourceY, 
                         target.targetMidX, 
-                        target.targetTopY, 
+                        target.targetMidY, 
                         EdgeRenderer.Config().COLORS.COLOR_TRUE
                     );
                     sourceX += padding;
@@ -212,10 +300,13 @@ class BoxEdgeRenderer extends EdgeRenderer {
                 if (remainder == 1) {
                     let target = sourceInfo.targets[half];
                     drawLine(
+                        sourceInfo.source,
+                        target,
+                        
                         sourceX, 
                         sourceY, 
                         target.targetMidX, 
-                        target.targetTopY, 
+                        target.targetMidY, 
                         EdgeRenderer.Config().COLORS.COLOR_DIRECT
                     );
                 }
@@ -224,10 +315,13 @@ class BoxEdgeRenderer extends EdgeRenderer {
                 for (let i = half; i < numTargets; i++) {
                     let target = sourceInfo.targets[i];
                     drawLine(
+                        sourceInfo.source,
+                        target,
+
                         sourceX, 
                         sourceY, 
                         target.targetMidX, 
-                        target.targetTopY, 
+                        target.targetMidY, 
                         EdgeRenderer.Config().COLORS.COLOR_FALSE
                     );
                     sourceX -= padding;
@@ -369,13 +463,15 @@ class BoxVertexRenderer extends VertexRenderer {
         this.drawingData.forEach((vertex) => {
             { // (* draw the box for the vertex *)
                 // (* set the shadow properties *)
-                ctx.shadowColor = VertexRenderer.Config().COLORS.COLOR_SHADOW;
+                ctx.shadowColor = vertex.vertex.selected ? 
+                    VertexRenderer.Config().COLORS.COLOR_SHADOW_SELECTED : VertexRenderer.Config().COLORS.COLOR_SHADOW;
                 ctx.shadowOffsetX = (VertexRenderer.Config().OFFSETS.OFFSET_SHADOW) * widget.camera.zoom;
                 ctx.shadowOffsetY = (VertexRenderer.Config().OFFSETS.OFFSET_SHADOW) * widget.camera.zoom;
                 ctx.shadowBlur = VertexRenderer.Config().SIZES.SIZE_SHADOW;
 
                 // (* draw the border of the vertex *)
-                ctx.fillStyle = VertexRenderer.Config().COLORS.COLOR_BORDER;
+                ctx.fillStyle = vertex.vertex.selected ? 
+                    VertexRenderer.Config().COLORS.COLOR_BORDER_SELECTED : VertexRenderer.Config().COLORS.COLOR_BORDER;
                 ctx.fillRect(
                     vertex.x - VertexRenderer.Config().SIZES.SIZE_BORDER, 
                     vertex.y - VertexRenderer.Config().SIZES.SIZE_BORDER, 

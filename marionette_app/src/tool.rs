@@ -17,9 +17,11 @@ pub fn Tool(cx: Scope) -> Element {
         style { include_str!("resources/styles/tool/widgets/graph.css") },
         style { include_str!("resources/styles/tool/widgets/clock.css") },
 
+        script { include_str!("resources/scripts/tool/jquery-3.7.1.min.js")},
+        script { include_str!("resources/scripts/tool/graphing/dagre.min.js") },
+
         script { include_str!("resources/scripts/tool/graphing/data_provider.js") }
         
-        script { include_str!("resources/scripts/tool/graphing/dagre.min.js") },
         script { include_str!("resources/scripts/tool/graphing/graph.js") },
         script { include_str!("resources/scripts/tool/graphing/graph_vertex.js") },
         script { include_str!("resources/scripts/tool/graphing/graph_edge.js")}

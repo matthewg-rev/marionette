@@ -12,8 +12,9 @@ class GraphWidget extends Widget {
         this.ctx = this.container.getContext('2d');
 
         this.renderer = new BoxRenderer();
-        this.graph = Graph.random();
+        this.graph = Graph.fromJSON(Graph.testJSON());
 
+        this.binds['containerMouseClick'] = this.containerMouseClick.bind(this);
         this.binds['containerMouseDown'] = this.containerMouseDown.bind(this);
         this.binds['containerMouseMove'] = this.containerMouseMove.bind(this);
         this.binds['containerMouseUp'] = this.containerMouseUp.bind(this);
@@ -27,8 +28,8 @@ class GraphWidget extends Widget {
             x: this.container.style.width / 2,
             y: this.container.style.height / 2,
 
-            zoom: 0.1,
-            lastZoom: 0.1,
+            zoom: 1,
+            lastZoom: 1,
             maxZoom: 5,
             minZoom: 0.1,
             scrollSensitivity: 0.005,
@@ -43,6 +44,8 @@ class GraphWidget extends Widget {
             dragging: {flag: false, start: {x: 0, y: 0}},
             pinching: {start: {distance: null}}
         }
+
+        $(this.container).click(this.binds.containerMouseClick);
 
         this.onExpand['graph'] = () => {
             this.container.style.visibility = this.flags.expanded ? 'visible' : 'hidden';
@@ -112,6 +115,33 @@ class GraphWidget extends Widget {
         }
     }
 
+    containerMouseClick(e) {
+        let rect = this.container.getBoundingClientRect();
+
+        let x = e.clientX;
+        let y = e.clientY;
+
+        let scaleX = (this.container.width / rect.width);
+        let scaleY = (this.container.height / rect.height);
+
+        // account for the canvas's position
+        x -= rect.left;
+        y -= rect.top;
+
+        // account for the canvas's scale
+        x *= scaleX;
+        y *= scaleY;
+
+        // account for the camera's position
+        x -= this.camera.x;
+        y -= this.camera.y;
+
+        // iterate through the renderer's vertices and check if the click was inside any of them
+        if (this.graph) {
+            this.renderer.select(this.ctx, {x: x, y: y});
+        }
+    }
+
     containerMouseDown(e) {
         let location = this.getLocationFromEvent(e);
         this.states.dragging.flag = true;
@@ -126,6 +156,7 @@ class GraphWidget extends Widget {
             let oy = this.camera.y;
             this.camera.x = location.x/this.camera.zoom - this.states.dragging.start.x;
             this.camera.y = location.y/this.camera.zoom - this.states.dragging.start.y;
+
             this.states.updated.flag = this.camera.x !== ox || this.camera.y !== oy;
         }
     }
@@ -182,8 +213,8 @@ class GraphWidget extends Widget {
     }
 
     centerButtonClick(e) {
-        this.camera.x = window.innerWidth / 2;
-        this.camera.y = window.innerHeight / 2;
+        this.camera.x = 0;
+        this.camera.y = 0;
         this.states.updated.flag = true;
     }
 

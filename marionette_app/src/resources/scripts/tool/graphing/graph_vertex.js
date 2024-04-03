@@ -9,6 +9,15 @@ class GraphVertex {
         // (* unique identifier for the vertex                                             *)
         this.id = -1;
 
+        // (* whether or not the user has selected the vertex                              *)
+        this.selected = false;
+
         graph.nodes.push(this);
+    }
+
+    static fromJSON(graph, json) {
+        let vertex = new GraphVertex(graph);
+        vertex.id = json.id;
+        return vertex;
     }
 }

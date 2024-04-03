@@ -5,6 +5,7 @@ class GraphRenderer {
     constructor() {}
 
     preprocess(ctx, data) {}
+    select(ctx, location) {}
     render(ctx, widget) {}
 }
 
@@ -48,8 +49,11 @@ class RendererConfig {
             },
             COLORS: {
                 COLOR_BORDER: "#9b9b9b",
+                COLOR_BORDER_SELECTED: "#9f9f9f",
                 COLOR_BACKGROUND: "#0f0f0f",
-                COLOR_SHADOW: "#080808"
+
+                COLOR_SHADOW: "#080808",
+                COLOR_SHADOW_SELECTED: "#0a0a0a",
             },
             SIZES: {
                 SIZE_TEXT: 16,
@@ -72,13 +76,18 @@ class RendererConfig {
             COLORS: {
                 COLOR_DIRECT: "#9b9b9b",
                 COLOR_TRUE: "#7fff7f",
-                COLOR_FALSE: "#ff7f7f"
+                COLOR_FALSE: "#ff7f7f",
+
+                COLOR_DIRECT_SELECTED: "#9c9c9c",
+                COLOR_TRUE_SELECTED: "#9fff9f",
+                COLOR_FALSE_SELECTED: "#ff9f9f"
             },
             PADDING: {
                 PADDING_BETWEEN_EDGES: 0.05, // 5% of width
+                PADDING_LINE: 25,
             },
             SIZES: {
-                SIZE_LINE_START: 2
+                SIZE_LINE_START: 2,
             }
         },
         [ErrorRenderer]: {}
