@@ -33,19 +33,101 @@ html, body {
 
 #toolbar {
     display: flex;
-    flex-direction: row;
-    justify-content: space-between;
     align-items: center;
+    justify-content: flex-start;
+
     background: #0f0f0f;
     color: #ffffff;
-    font-family: 'Roboto Slab', serif;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 1.5em;
-    padding-left: 0.5em;
-    padding-right: 0.5em;
-    height: 25px;
+    height: 30px;
     margin: 0;
+    z-index: 100;
 
     border-bottom: 1px solid #484848;
+}
+
+#toolbar .toolbar-category {
+    display: inline-block;
+    border: none;
+    cursor: pointer;
+
+    background: #0f0f0f;
+    color: #dddddd;
+    text-decoration: none;
+    text-align: center;
+    font-size: 0.5em;
+
+    padding-left: 10px;
+    padding-right: 10px;
+
+    height: 20px;
+    margin-bottom: 0;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+#toolbar .toolbar-category:hover {
+    border-radius: 5px;
+    background: #2f2f2f;
+    color: #dddddd;
+}
+
+#toolbar .toolbar-category-selected {
+    border-radius: 5px;
+    background: #2f2f2f;
+    color: #dddddd;
+}
+
+#toolbar .toolbar-category .toolbar-category-dropdown {
+    display: block;
+    position: absolute;
+    width: fit-content;
+    background: #2f2f2f;
+    color: #dddddd;
+    font-size: 1em;
+    border: 1px solid #484848;
+    border-radius: 5px;
+    z-index: 100;
+}
+
+#toolbar .toolbar-tool .toolbar-tool-expand {
+    display: block;
+    float: right;
+    background: transparent;
+    color: #dddddd;
+    font-size: 0.75em;
+    border: none;
+    cursor: pointer;
+    font-family: 'NerdFontsSymbols Nerd Font';
+}
+
+#toolbar .toolbar-category .toolbar-tool {
+    display: block;
+    background: #2f2f2f;
+    text-align: left;
+
+    color: #dddddd;
+    font-size: 1em;
+    border: none;
+    cursor: pointer;
+
+    padding-bottom: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+
+    height: 20px;
+    width: auto;
+
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    margin-top: 5px;
+}
+
+#toolbar .toolbar-category .toolbar-tool:hover {
+    background: #04395e;
+    border-radius: 5px;
 }
 
 .canvas {

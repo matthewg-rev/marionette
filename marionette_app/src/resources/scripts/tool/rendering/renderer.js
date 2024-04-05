@@ -49,16 +49,17 @@ class RendererConfig {
             },
             COLORS: {
                 COLOR_BORDER: "#9b9b9b",
-                COLOR_BORDER_SELECTED: "#9f9f9f",
+                COLOR_BORDER_SELECTED: "#ffffff",
                 COLOR_BACKGROUND: "#0f0f0f",
 
                 COLOR_SHADOW: "#080808",
-                COLOR_SHADOW_SELECTED: "#0a0a0a",
+                COLOR_SHADOW_SELECTED: "#222222",
             },
             SIZES: {
                 SIZE_TEXT: 16,
                 SIZE_BORDER: 1,
-                SIZE_SHADOW: 1
+                SIZE_SHADOW: 1,
+                SIZE_SHADOW_BLUR: 2
             },
             OFFSETS: {
                 OFFSET_SHADOW: 4

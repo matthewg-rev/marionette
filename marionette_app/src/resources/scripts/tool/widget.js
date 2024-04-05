@@ -1,5 +1,8 @@
 class Widget {
     constructor(title, width, height) {
+        let toolBar = document.getElementById('toolbar');
+        this.startY = toolBar.clientHeight + 1;
+
         this.height = height;
         this.width = width;
 
@@ -10,7 +13,7 @@ class Widget {
             this.element.style.width = this.width + 'px';
             this.element.style.position = 'absolute';
             this.element.style.left = '0px';
-            this.element.style.top = '25px';
+            this.element.style.top = (toolBar.clientHeight + 1) + 'px';
             
             this.header = this.element.appendChild(document.createElement('div'));
             this.header.id = 'header';
@@ -51,15 +54,17 @@ class Widget {
         this.positionInfo = {
             movement: {
                 current: { x: 0, y: 25 },
-                start: { width: this.element.offsetLeft, y: this.element.offsetTop },
+                start: { width: this.element.offsetLeft, y: this.startY },
             },
             resizing: {
                 currentSize: { width: this.width, height: this.height + 1 },
-                current: { x: 0, y: 25 },
-                start: { x: this.element.offsetLeft, y: this.element.offsetTop }
+                current: { x: 0, y: this.startY },
+                start: { x: this.element.offsetLeft, y: this.startY }
             },
             oldZIndex: 0
         }
+
+        console.log(toolBar.clientHeight + 1);
 
         this.flags = {
             hasBindedEvents: false,
@@ -133,7 +138,7 @@ class Widget {
         this.element.style.zIndex = 1000;
 
         this.positionInfo.movement.start.x = e.clientX - this.positionInfo.movement.current.x;
-        this.positionInfo.movement.start.y = e.clientY - this.positionInfo.movement.current.y;
+        this.positionInfo.movement.start.y = this.startY + (e.clientY - this.positionInfo.movement.current.y);
 
         if (!this.flags.hasBindedEvents) {
             this.flags.hasBindedEvents = true;
@@ -146,16 +151,18 @@ class Widget {
     }
 
     moveAt(e) {
-        const dx = e.clientX - this.positionInfo.movement.start.x;
-        const dy = e.clientY - this.positionInfo.movement.start.y;
+        const mouse = {x: e.clientX, y: e.clientY};
+        const dx = mouse.x - this.positionInfo.movement.start.x;
+        const dy = mouse.y - this.positionInfo.movement.start.y;
+        
         const sx = Math.round(dx / this.canvas.grid_size) * this.canvas.grid_size;
         const sy = Math.round(dy / this.canvas.grid_size) * this.canvas.grid_size;
 
         this.positionInfo.movement.current.x = sx;
-        this.positionInfo.movement.current.y = sy;
+        this.positionInfo.movement.current.y = this.startY + sy;
 
         this.element.style.left = sx + 'px';
-        this.element.style.top = (sy + 5) + 'px';
+        this.element.style.top = this.startY + sy + 'px';
     }
 
     headerMouseMove(e) {

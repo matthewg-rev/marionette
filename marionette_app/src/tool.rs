@@ -18,26 +18,26 @@ pub fn Tool(cx: Scope) -> Element {
         style { include_str!("resources/styles/tool/widgets/clock.css") },
 
         script { include_str!("resources/scripts/tool/jquery-3.7.1.min.js")},
-        script { include_str!("resources/scripts/tool/graphing/dagre.min.js") },
+        script { include_str!("resources/scripts/tool/dagre.min.js") },
 
         script { include_str!("resources/scripts/tool/graphing/data_provider.js") }
-        
         script { include_str!("resources/scripts/tool/graphing/graph.js") },
         script { include_str!("resources/scripts/tool/graphing/graph_vertex.js") },
         script { include_str!("resources/scripts/tool/graphing/graph_edge.js")}
 
-        script { include_str!("resources/scripts/tool/graphing/line.js") },
-        script { include_str!("resources/scripts/tool/graphing/text.js") },
-
-        script { include_str!("resources/scripts/tool/graphing/renderer.js") },
-        script { include_str!("resources/scripts/tool/graphing/box_renderer.js") },
+        script { include_str!("resources/scripts/tool/rendering/line.js") },
+        script { include_str!("resources/scripts/tool/rendering/text.js") },
+        script { include_str!("resources/scripts/tool/rendering/renderer.js") },
+        script { include_str!("resources/scripts/tool/rendering/box_renderer.js") },
 
         script { include_str!("resources/scripts/tool/widget.js") },
         script { include_str!("resources/scripts/tool/widgets/graph.js") },
         script { include_str!("resources/scripts/tool/widgets/clock.js") },
 
         script { include_str!("resources/scripts/tool/canvas.js") },
+        script { include_str!("resources/scripts/tool/toolbar.js") },
         script { include_str!("resources/scripts/tool/tool.js") },
+
         html!(
             <div id="toolbar"></div>
             <div class="canvas">

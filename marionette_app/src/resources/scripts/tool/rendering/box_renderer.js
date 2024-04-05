@@ -100,14 +100,12 @@ class BoxRenderer extends GraphRenderer {
         if (g) {
             preprocessVertices(g);
             preprocessEdges(g);
-            this.drawPoint(ctx, 0, 0); // for debugging
         } else {
             // TODO: Prepare ErrorRenderer
         }
     }
 
     select(ctx, location) {
-        this.drawPoint(ctx, location.x, location.y); // for debugging
         // (* find any vertex that is selected                          *)
         let vertex = this.drawingData.vertexData.find((vertex) => {
             return vertex.vertex.selected;
@@ -136,7 +134,11 @@ class BoxRenderer extends GraphRenderer {
         // (* if a vertex is found, select it                           *)
         if (vertex) {
             vertex.vertex.selected = true;
+            return vertex.vertex;
         }
+
+        // (* return null if no vertex is found                         *)
+        return null;
     }
 
     render(ctx, widget) {
@@ -194,13 +196,6 @@ class BoxEdgeRenderer extends EdgeRenderer {
     }
 
     render(ctx, widget) {
-        let drawPoint = (x, y) => { // for debugging
-            ctx.strokeStyle = EdgeRenderer.Config().COLORS.COLOR_DIRECT;
-            ctx.beginPath();
-            ctx.arc(x, y, 10, 0, 2 * Math.PI);
-            ctx.stroke();
-        };
-
         let drawLine = (source, target, startX, startY, endMidX, endMidY, color) => {
             let linePadding = EdgeRenderer.Config().PADDING.PADDING_LINE;
             let above = startY > endMidY;
@@ -463,6 +458,8 @@ class BoxVertexRenderer extends VertexRenderer {
         this.drawingData.forEach((vertex) => {
             { // (* draw the box for the vertex *)
                 // (* set the shadow properties *)
+
+                ctx.shadowBlur = VertexRenderer.Config().SIZES.SIZE_SHADOW_BLUR;
                 ctx.shadowColor = vertex.vertex.selected ? 
                     VertexRenderer.Config().COLORS.COLOR_SHADOW_SELECTED : VertexRenderer.Config().COLORS.COLOR_SHADOW;
                 ctx.shadowOffsetX = (VertexRenderer.Config().OFFSETS.OFFSET_SHADOW) * widget.camera.zoom;

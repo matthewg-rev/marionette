@@ -37,8 +37,12 @@ class GraphWidget extends Widget {
         }
 
         this.states = {
+            selected: {vertex: null},
             trackpad: {flag: false},
             mouse: {flag: false},
+            
+            mouseDown: {flag: false},
+            allowSelection: {flag: true},
 
             updated: {flag: true},
             dragging: {flag: false, start: {x: 0, y: 0}},
@@ -115,42 +119,51 @@ class GraphWidget extends Widget {
         }
     }
 
+    getMousePos(canvas, e) {
+        let rect = canvas.getBoundingClientRect();
+        let scaleX = canvas.width / rect.width;
+        let scaleY = canvas.height / rect.height;
+
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+    }
+
+    canvasCoordinates(matrix, pos) {
+        let iMatrix = matrix.invertSelf();
+        let x = pos.x * iMatrix.a + pos.y * iMatrix.c + iMatrix.e;
+        let y = pos.x * iMatrix.b + pos.y * iMatrix.d + iMatrix.f;
+        return {x: x, y: y};
+    }
+
     containerMouseClick(e) {
-        let rect = this.container.getBoundingClientRect();
+        if (!this.states.allowSelection.flag) {
+            return;
+        }
 
-        let x = e.clientX;
-        let y = e.clientY;
-
-        let scaleX = (this.container.width / rect.width);
-        let scaleY = (this.container.height / rect.height);
-
-        // account for the canvas's position
-        x -= rect.left;
-        y -= rect.top;
-
-        // account for the canvas's scale
-        x *= scaleX;
-        y *= scaleY;
-
-        // account for the camera's position
-        x -= this.camera.x;
-        y -= this.camera.y;
+        // TODO: offload the Matrix 
+        let canvasMouseLocation = this.getMousePos(this.container, e);
+        let transformMatrix = this.ctx.getTransform();
+        let canvasSpace = this.canvasCoordinates(transformMatrix, canvasMouseLocation);
 
         // iterate through the renderer's vertices and check if the click was inside any of them
         if (this.graph) {
-            this.renderer.select(this.ctx, {x: x, y: y});
+            this.states.selected.vertex = this.renderer.select(this.ctx, {x: canvasSpace.x, y: canvasSpace.y});
+            this.states.updated.flag = true;
         }
     }
 
     containerMouseDown(e) {
         let location = this.getLocationFromEvent(e);
-        this.states.dragging.flag = true;
+        this.states.mouseDown.flag = true;
         this.states.dragging.start.x = location.x/this.camera.zoom - this.camera.x;
         this.states.dragging.start.y = location.y/this.camera.zoom - this.camera.y;
     }
 
     containerMouseMove(e) {
-        if (this.states.dragging.flag) {
+        if (this.states.mouseDown.flag) {
+            this.states.dragging.flag = true;
             let location = this.getLocationFromEvent(e);
             let ox = this.camera.x;
             let oy = this.camera.y;
@@ -162,7 +175,12 @@ class GraphWidget extends Widget {
     }
 
     containerMouseUp(e) {
-        this.states.dragging.flag = false;
+        this.states.mouseDown.flag = false;
+        if (this.states.dragging.flag) {
+            this.states.dragging.flag = false;
+            this.states.allowSelection.flag = false;
+            setTimeout(() => this.states.allowSelection.flag = true, 0);
+        }
         this.camera.lastZoom = this.camera.zoom;
     }
 
