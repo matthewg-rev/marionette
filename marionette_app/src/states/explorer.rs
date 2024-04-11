@@ -95,15 +95,13 @@ impl ExplorerState {
             };
 
             // get file attributes
-            let is_system = if cfg!(windows) {
+            if cfg!(windows) {
                 //let is_hidden = file_attributes & 2 != 0;
                 //let is_readonly = file_attributes & 1 != 0;
-                metadata.file_attributes() & 4 != 0
-            } else {
-                false
-            };
-            if is_system {
-                continue;
+                let is_system = metadata.file_attributes() & 4 != 0;
+                if is_system {
+                    continue;
+                }
             }
 
             if metadata.is_dir() {
