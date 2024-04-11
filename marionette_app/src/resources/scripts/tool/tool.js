@@ -3,35 +3,35 @@ ToolCanvas = new Canvas();
 
 file = new ToolbarCategory('File');
 {
-    file.children.push(new ToolbarTool('Exit', function() {
+    file.components.push(new ToolbarTool('Exit', function() {
         window.close();
     }));
 }
 
-view = new ToolbarCategory('View');
+widgets = new ToolbarCategory('Widgets');
 {
-    data = new ToolbarCategory('Data');
-    data.children.push(new ToolbarTool('Strings', function() {}));
-    view.children.push(data);
-}
+    {
+        analysis = new ToolbarCategory('Analysis');
 
-{
-    debug = new ToolbarCategory('Debug');
-    debug.children.push(new ToolbarTool('Breakpoints', function() {}));
-    view.children.push(debug);
-}
+        analysis.components.push(new ToolbarTool('Graph View', function() {
+            ToolCanvas.addWidget(new GraphWidget('Graph View', 601, 400));
+        }));
 
-{
-    view.children.push(new ToolbarTool('Graph View', function() {
-        ToolCanvas.addWidget(new GraphWidget('Graph', 601, 400));
-    }));
-    view.children.push(new ToolbarTool('Clock View', function() {
-        ToolCanvas.addWidget(new ClockWidget('Clock', 201, 200));
-    }));
+        analysis.components.push(new ToolbarTool('Text View', function() {
+            ToolCanvas.addWidget(new TextEditorWidget('Text View', 400, 400));
+        }));
+
+        widgets.components.push(analysis);
+    }
+    {
+        misc = new ToolbarCategory('Miscellaneous');
+        misc.components.push(new ToolbarTool('Clock View', function() {
+            ToolCanvas.addWidget(new ClockWidget('Clock', 201, 200));
+        }));
+        widgets.components.push(misc);
+    }
 }
 
 toolbar.components.push(file);
-toolbar.components.push(view);
-toolbar.populate();
-
-ToolCanvas.addWidget(new GraphWidget('Graph', 601, 400));
+toolbar.components.push(widgets);
+toolbar.create();

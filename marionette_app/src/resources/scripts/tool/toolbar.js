@@ -5,33 +5,48 @@ class Toolbar {
         this.components = [];
     }
 
-    populate() {
-        for (let category of this.components) {
-            let categoryElement = document.createElement('div');
-            let originalHeight = categoryElement.style.height;
-            
-            category.parent = this;
-            categoryElement.classList.add('toolbar-category');
-            categoryElement.innerText = category.name;
-            categoryElement.addEventListener('click', function(e) {
-                category.expanded = !category.expanded;
-                if (category.expanded) {
-                    categoryElement.style.height = originalHeight;
-                    categoryElement.classList.add('toolbar-category-selected');
-                    category.populate();
-                } else {
-                    categoryElement.classList.remove('toolbar-category-selected');
-                    categoryElement.style.height = 'auto';
-                    category.clear();
-                }
-                e.stopPropagation();
-            });
-
-            this.bar.appendChild(categoryElement);
-            category.setElement(categoryElement);
-            category.setToolbar(this.bar);
+    selected(item) {
+        let path = [];
+        let current = item;
+        while (current.parent !== undefined) {
+            path.push(current);
+            current = current.parent;
         }
-    
+        path.push(this);
+
+        for (let node of path) {
+            for (let component of node.components) {
+                if (path.indexOf(component) === -1) {
+                    if (component.closed !== undefined) {
+                        component.closed();
+                    }
+                }
+            }
+        }
+    }
+
+    hideEverything(item) {
+        let path = [];
+        let current = item;
+        while (current.parent !== undefined) {
+            path.push(current);
+            current = current.parent;
+        }
+        path.push(this);
+
+        for (let node of path) {
+            for (let component of node.components) {
+                component.closed();
+            }
+        }
+    }
+
+    create() {
+        for (let category of this.components) {
+            category.setToolbar(this);
+            category.create(this);
+            this.bar.appendChild(category.element);
+        }
     }
 }
 
@@ -39,86 +54,122 @@ class ToolbarCategory {
     constructor(name) {
         this.name = name;
 
-        this.children = [];
+        this.components = [];
         this.expanded = false;
-        this.current = null;
 
         this.parent = null;
         this.element = null;
         this.toolbar = null;
     }
 
-    setElement(element) {
-        this.element = element;
-    }
-
     setToolbar(toolbar) {
         this.toolbar = toolbar;
     }
 
-    populate() {
+    create(parent) {
+        let categoryElement = document.createElement('div');
+        let originalHeight = categoryElement.style.height;
+
+        categoryElement.classList.add('toolbar-category');
+        categoryElement.innerText = this.name;
+
+        // this is such a poor decision on behalf of the javascript
+        // standard, why is this required for me to access `this`
+        let category = this; 
+        let onClick = function(e) {
+            category.expanded = !category.expanded;
+            if (category.expanded) {
+                categoryElement.style.height = originalHeight;
+                categoryElement.classList.add('toolbar-category-selected');
+
+                category.opened();
+                category.toolbar.selected(category);
+            } else {
+                categoryElement.classList.remove('toolbar-category-selected');
+                category.closed();
+            }
+            e.stopPropagation();
+        }
+        
+        categoryElement.addEventListener('click', onClick);
+        
+        if (parent.bar === undefined) {
+            let expand = document.createElement('div');
+            expand.classList.add('toolbar-category-expand');
+            expand.innerText = '';
+            expand.addEventListener('click', onClick);
+            categoryElement.appendChild(expand);
+        }
+
+        this.element = categoryElement;
+        this.parent = parent;
+    }
+
+    opened() {
+        this.expanded = true;
+
         let dropdown = document.createElement('div');
+        this.element.appendChild(dropdown);
         dropdown.classList.add('toolbar-category-dropdown');
-        if (this.parent.components !== undefined) {
+
+        if (this.parent.bar !== undefined) {
             // center the dropdown under the element
             let rect = this.element.getBoundingClientRect();
-            let toolbarRect = this.toolbar.getBoundingClientRect();
+            let toolbarRect = this.toolbar.bar.getBoundingClientRect();
             dropdown.style.left = rect.left + 'px';
             dropdown.style.top = toolbarRect.bottom + 'px';
         } else {
             // get absolute width of the parent element
-            let rect = this.parent.element.getBoundingClientRect();
-            dropdown.style.left = rect.right + 'px';
+            let parentDropdown = this.parent.element.querySelector('.toolbar-category-dropdown');
+            let rect = parentDropdown.getBoundingClientRect();
+            dropdown.style.left = rect.width + 'px';
         }
-        this.element.appendChild(dropdown);
 
-        for (let tool of this.children) {
-            let toolElement = document.createElement('div');
-            toolElement.classList.add('toolbar-tool');
-            toolElement.innerText = tool.name;
-
-            tool.setElement(toolElement);
-            if (tool.children !== undefined) {
-                let expand = document.createElement('div');
-                expand.classList.add('toolbar-tool-expand');
-                expand.innerText = '';
-
-                let expandFn = function(e) {
-                    tool.expanded = !tool.expanded;
-                    if (tool.expanded) {
-                        tool.populate();
-                    } else {
-                        tool.clear();
-                    }
-                    e.stopPropagation();
-                };
-                expand.addEventListener('click', expandFn);
-                toolElement.addEventListener('click', expandFn);
-                toolElement.appendChild(expand);
-                tool.parent = this;
+        for (let component of this.components) {
+            component.setToolbar(this.toolbar);
+            if (component instanceof ToolbarCategory) {
+                component.create(this);
             } else {
-                toolElement.addEventListener('click', tool.onClick);
+                component.setElement(document.createElement('div'));
+                component.element.classList.add('toolbar-tool');
+                component.element.innerText = component.name;
+                component.setToolbar(this.toolbar);
+                component.setParent(this);
+                component.element.addEventListener('click', component.onClick);
             }
-            dropdown.appendChild(toolElement);
+            dropdown.appendChild(component.element);
         }
     }
 
-    clear() {
-        for (let tool of this.children) {
-            tool.remove();
-        }
-        this.element.querySelector('.toolbar-category-dropdown').remove();
-    }
+    closed() {
+        this.expanded = false;
+        this.element.classList.remove('toolbar-category-selected');
+        let dropdown = this.element.querySelector('.toolbar-category-dropdown');
 
-    remove() {
-        this.element.remove();
+        if (dropdown !== null) {
+            dropdown.remove();
+        }
     }
 }
 
 class ToolbarTool {
     constructor(name, onClick) {
         this.name = name;
-        this.onClick = onClick;
+
+        let tool = this;
+        this.onClick = function(e) {
+            onClick();
+            tool.toolbar.hideEverything(this);
+            e.stopPropagation();
+        }
+    }
+
+    setToolbar(toolbar) {
+        this.toolbar = toolbar;
+    }
+
+    setParent(parent) {
+        this.parent = parent;
     }
 
     setElement(element) {

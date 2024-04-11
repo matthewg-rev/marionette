@@ -64,8 +64,6 @@ class Widget {
             oldZIndex: 0
         }
 
-        console.log(toolBar.clientHeight + 1);
-
         this.flags = {
             hasBindedEvents: false,
             expanded: false,

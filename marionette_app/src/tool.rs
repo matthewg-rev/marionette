@@ -33,6 +33,7 @@ pub fn Tool(cx: Scope) -> Element {
         script { include_str!("resources/scripts/tool/widget.js") },
         script { include_str!("resources/scripts/tool/widgets/graph.js") },
         script { include_str!("resources/scripts/tool/widgets/clock.js") },
+        script { include_str!("resources/scripts/tool/widgets/text_editor.js") },
 
         script { include_str!("resources/scripts/tool/canvas.js") },
         script { include_str!("resources/scripts/tool/toolbar.js") },

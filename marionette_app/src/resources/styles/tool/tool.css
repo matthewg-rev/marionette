@@ -52,7 +52,7 @@ html, body {
     border: none;
     cursor: pointer;
 
-    background: #0f0f0f;
+    background: transparent;
     color: #dddddd;
     text-decoration: none;
     text-align: center;
@@ -69,65 +69,99 @@ html, body {
 
 #toolbar .toolbar-category:hover {
     border-radius: 5px;
-    background: #2f2f2f;
-    color: #dddddd;
+    background: #252526;
+    color: #ffffff;
 }
 
 #toolbar .toolbar-category-selected {
     border-radius: 5px;
-    background: #2f2f2f;
-    color: #dddddd;
+    background: #252526;
+    color: #ffffff;
 }
 
-#toolbar .toolbar-category .toolbar-category-dropdown {
+#toolbar .toolbar-category-dropdown {
     display: block;
     position: absolute;
-    width: fit-content;
-    background: #2f2f2f;
-    color: #dddddd;
+    background: #252526;
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 1em;
+    height: fit-content;
+    width: max-content;
+    margin: 0;
+    z-index: 100;
+
     border: 1px solid #484848;
     border-radius: 5px;
-    z-index: 100;
 }
 
-#toolbar .toolbar-tool .toolbar-tool-expand {
+#toolbar .toolbar-category-dropdown .toolbar-category {
     display: block;
-    float: right;
+    border: none;
+    cursor: pointer;
+
     background: transparent;
     color: #dddddd;
-    font-size: 0.75em;
-    border: none;
-    cursor: pointer;
-    font-family: 'NerdFontsSymbols Nerd Font';
+    text-decoration: none;
+    text-align: left;
+    font-size: 1em;
+
+    width: auto;
+    height: auto;
+    
+    margin: 5px;
 }
 
-#toolbar .toolbar-category .toolbar-tool {
-    display: block;
-    background: #2f2f2f;
-    text-align: left;
-
+#toolbar .toolbar-category-dropdown .toolbar-category-expand {
+    display: inline;
+    background: transparent;
     color: #dddddd;
-    font-size: 1em;
+    text-decoration: none;
+    text-align: center;
+    font-size: 0.75em;
+    font-family: 'NerdFontsSymbols Nerd Font', monospace;
+    width: auto;
+    height: 100%;
+
+    padding-left: 20px;
+    float: right;
+}
+
+#toolbar .toolbar-category-dropdown .toolbar-tool {
+    display: block;
     border: none;
     cursor: pointer;
 
-    padding-bottom: 10px;
+    background: transparent;
+    color: #dddddd;
+    text-decoration: none;
+    text-align: left;
+    font-size: 1em;
+
+    width: auto;
+    height: auto;
+    
     padding-left: 10px;
     padding-right: 10px;
-
-    height: 20px;
-    width: auto;
-
-    margin-left: 5px;
-    margin-right: 5px;
-    margin-bottom: 5px;
-    margin-top: 5px;
+    margin: 5px;
 }
 
-#toolbar .toolbar-category .toolbar-tool:hover {
-    background: #04395e;
+#toolbar .toolbar-category-dropdown .toolbar-tool:hover {
     border-radius: 5px;
+    background: #04395e;
+    color: #ffffff;
+}
+
+#toolbar .toolbar-category-dropdown .toolbar-category:hover {
+    border-radius: 5px;
+    background: #04395e;
+    color: #ffffff;
+}
+
+#toolbar .toolbar-category-dropdown .toolbar-category-selected {
+    border-radius: 5px;
+    background: #04395e;
+    color: #ffffff;
 }
 
 .canvas {

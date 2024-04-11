@@ -59,7 +59,6 @@ class BoxRenderer extends GraphRenderer {
 
         let preprocessVertices = (g) => {
             if (this.drawingData.vertexData.length > 0) return;
-
             g.nodes().forEach((v) => {
                 let node = this.graph.nodes.find((n) => n.id == v);
                 let nodeInfo = g.node(v);
@@ -215,7 +214,6 @@ class BoxEdgeRenderer extends EdgeRenderer {
             ctx.moveTo(startX, bendStartY);
 
             if (above) {
-                
                 let horizontalDistance = (source.x + (source.width/2)) - startX;
 
                 let newX = startX;
@@ -275,6 +273,10 @@ class BoxEdgeRenderer extends EdgeRenderer {
 
                 let padding = sourceInfo.source.width * EdgeRenderer.Config().PADDING.PADDING_BETWEEN_EDGES;
                 sourceX -= (padding * half);
+
+                sourceInfo.targets.sort((a, b) => {
+                    return a.targetMidX - b.targetMidX;
+                });
 
                 for (let i = 0; i < half; i++) {
                     let target = sourceInfo.targets[i];

@@ -1,5 +1,8 @@
-use std::os::windows::fs::MetadataExt;
 use std::fs::*;
+
+#[cfg(target_os = "windows")]
+use std::os::windows::fs::MetadataExt;
+
 use std::time::SystemTime;
 use chrono::*;
 use std::fmt::{Debug, Formatter};
@@ -92,10 +95,13 @@ impl ExplorerState {
             };
 
             // get file attributes
-            let file_attributes = metadata.file_attributes();
-            //let is_hidden = file_attributes & 2 != 0;
-            //let is_readonly = file_attributes & 1 != 0;
-            let is_system = file_attributes & 4 != 0;
+            let is_system = if cfg!(windows) {
+                //let is_hidden = file_attributes & 2 != 0;
+                //let is_readonly = file_attributes & 1 != 0;
+                metadata.file_attributes() & 4 != 0
+            } else {
+                false
+            };
             if is_system {
                 continue;
             }
