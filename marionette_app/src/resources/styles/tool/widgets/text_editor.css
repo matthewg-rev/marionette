@@ -1,0 +1,137 @@
+:root {
+    /* Fonts */
+    --editor-font-family: 'JetBrains Mono', monospace;
+    --editor-font-size: 14px;
+    
+    /* Sizes */
+    --editor-line-height: 20px;
+    
+    /* Colors */
+    --editor-background-color: #111111;
+    --editor-foreground-color: #edf5fd;
+
+    --editor-active-line-number-color: #606060;
+    --editor-active-line-border-color: #282828;
+    --editor-line-number-color: #292929;
+
+    --editor-caret-color: #bbbbbb;
+    --editor-tab-size: 4;
+}
+
+::-webkit-resizer {
+    display: none;
+    pointer-events: none;
+}
+
+::-webkit-scrollbar-corner {
+    display: none;
+    pointer-events: none;
+}
+
+#widget > .text-editor {
+    display: flex;
+    flex-direction: row;
+    top: 20px;
+    position: absolute;
+    overflow: hidden;
+
+    letter-spacing: 0px;
+    font-family: var(--editor-font-family);
+    font-size: var(--editor-font-size);
+
+    color: var(--editor-foreground-color);
+    background: var(--editor-background-color);
+}
+
+#widget > .bottom-bar {
+    display: flex;
+    flex-direction: row;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 22px;
+    z-index: 0;
+    background: #1e1e1e;
+    color: #ffffff;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 0 5px;
+    box-sizing: border-box;
+    user-select: none;
+    visibility: hidden;
+}
+
+#widget > .text-editor > .text-area {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    height: 100%;
+    background: transparent;
+
+    white-space: nowrap;
+    overflow: auto;
+    overflow: -moz-scrollbars-horizontal;
+
+    resize: none;
+    scrollbar-color: var(--editor-active-line-number-color) var(--editor-background-color);
+    
+    text-overflow: clip;
+    -ms-text-overflow: clip;
+
+    border: none;
+    padding-left: 5px;
+
+    font-family: var(--editor-font-family);
+    font-size: var(--editor-font-size);
+    color: var(--editor-foreground-color);
+    line-height: var(--editor-line-height);
+
+    -moz-tab-size: var(--editor-tab-size);
+    -o-tab-size: var(--editor-tab-size);
+    tab-size: var(--editor-tab-size);
+
+    cursor: text;
+}
+
+#widget > .text-editor > .margin {
+    flex-direction: column;
+    width: 70px;
+    height: 100%;
+    background: transparent;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    overflow: hidden;
+}
+
+#widget > .text-editor > .margin > .line-margin {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background: transparent;
+    overflow: hidden;
+    padding: 0 5px;
+    box-sizing: border-box;
+    user-select: none;
+
+    height: var(--editor-line-height);
+}
+
+#widget > .text-editor > .margin > .line-margin > .line-number {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    text-align: right;
+    vertical-align: middle;
+    background: transparent;
+    height: 100%;
+    width: auto;
+
+    font-size: var(--editor-font-size);
+    color: var(--editor-line-number-color);
+}
+
+#widget > .text-editor > .margin > .line-margin > .active-line-number {
+    color: var(--editor-active-line-number-color);
+}

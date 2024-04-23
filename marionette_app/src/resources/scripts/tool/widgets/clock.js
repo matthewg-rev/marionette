@@ -2,7 +2,7 @@ class ClockWidget extends Widget {
     constructor(title, width, height) {
         super(title, width, height);
         this.clock = this.element.appendChild(document.createElement('div'));
-        this.clock.id = 'clock';
+        this.clock.classList.add('clock');
         this.clock.innerHTML = '00:00:00';
         
         this.onExpand['clock'] = () => {

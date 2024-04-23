@@ -24,7 +24,7 @@ pub enum Route {
 
     #[route("/open/:tab")]
     OpenTab { tab: usize },
-
+    
     #[route("/tool")]
     Tool {},
 

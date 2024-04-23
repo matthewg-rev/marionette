@@ -67,6 +67,7 @@ class Widget {
         this.flags = {
             hasBindedEvents: false,
             expanded: false,
+            focused: false,
             dragging: false,
             moving: false
         }

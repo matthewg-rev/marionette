@@ -29,6 +29,9 @@ class Canvas {
     }
 
     widgetFocused(widget) {
+        this.widgets.forEach(w => w.flags.focused = false);
+        widget.flags.focused = true;
+        
         const indexes = this.widgets.map(w => w.element.style.zIndex).filter(z => z > widget.element.style.zIndex);
         indexes.forEach(z => {
             const w = this.widgets.find(w => w.element.style.zIndex === z);

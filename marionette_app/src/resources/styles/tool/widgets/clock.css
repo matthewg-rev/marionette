@@ -1,4 +1,4 @@
-#widget > #clock {
+#widget > .clock {
     position: absolute;
 
     visibility: hidden;

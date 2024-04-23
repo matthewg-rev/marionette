@@ -11,6 +11,7 @@
     height: 20px;
     margin: 0;
     border: 1px solid #202020;
+    overflow: hidden;
 
     transition: width 0.1s ease, height 0.1s ease;
     animation: normborder 0.2s both;
