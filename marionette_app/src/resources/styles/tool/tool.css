@@ -10,6 +10,12 @@
     font-style: normal
 }
 
+*, *::after, *::before {
+	-webkit-user-select: none;
+	-webkit-user-drag: none;
+	-webkit-app-region: no-drag;
+}
+
 pre {
     visibility: hidden;
     width: 0;

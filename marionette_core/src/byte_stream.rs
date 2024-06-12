@@ -118,7 +118,48 @@ impl ByteStream {
         self.index
     }
 
+    /// Returns the remaining bytes of the byte stream.
+    /// 
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamRead};
+    /// let bytes = vec![0x00, 0x01, 0x02, 0x03];
+    /// let mut byte_stream = ByteStream::new(bytes);
+    /// u8::read(&mut byte_stream).unwrap();
+    /// assert_eq!(byte_stream.remaining(), vec![0x01, 0x02, 0x03]);
+    /// ```
     pub fn remaining(&self) -> Vec<u8> {
         self.bytes[self.index..].to_vec()
+    }
+
+    /// Rolls back the byte stream to a previous checkpoint.
+    /// 
+    /// # Examples
+    /// ```
+    /// use marionette_core::byte_stream::{ByteStream, ByteStreamRead};
+    /// let bytes = vec![0x00, 0x01, 0x02, 0x03];
+    /// let mut byte_stream = ByteStream::new(bytes);
+    /// let b1 = u8::read(&mut byte_stream).unwrap();
+    /// byte_stream.rollback(1);
+    /// let b2 = u8::read(&mut byte_stream).unwrap();
+    /// assert_eq!(b1, b2);
+    /// ```
+    pub fn rollback(&mut self, rollback: usize) {
+        let mut rollback = rollback;
+        while rollback > 0 && !self.history.is_empty() {
+            let (index, size) = self.history.pop().unwrap();
+            self.index = index;
+            rollback -= 1;
+        }
+    }
+}
+
+impl ToString for ByteStream {
+    fn to_string(&self) -> String {
+        let mut string = String::new();
+        for byte in &self.bytes {
+            string.push(*byte as char);
+        }
+        string
     }
 }

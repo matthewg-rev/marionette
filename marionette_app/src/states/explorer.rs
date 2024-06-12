@@ -71,7 +71,7 @@ impl ExplorerState {
             let metadata = entry.metadata().unwrap();
             let date_modified = metadata.modified().unwrap();
             let date_modified = date_modified.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
-            let date_modified = NaiveDateTime::from_timestamp_opt(date_modified as i64, 0).unwrap().format("%Y-%m-%d %H:%M:%S").to_string();
+            let date_modified = DateTime::from_timestamp(date_modified as i64, 0).unwrap().format("%Y-%m-%d %H:%M:%S").to_string();
 
             let file_extension = if metadata.is_dir() {
                 String::from("Folder")

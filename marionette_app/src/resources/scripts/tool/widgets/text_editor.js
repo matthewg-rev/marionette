@@ -50,9 +50,7 @@ class TextEditorWidget extends Widget {
 
             // for some reason, the cursor position is not updated when the keydown event is fired
             // so we need to wait a bit before selecting the current line
-            setTimeout(() => {
-                this.selectCurrentLine();
-            }, 10);
+            this.selectCurrentLine();
         });
 
         let margin = this.margin;
@@ -74,13 +72,15 @@ class TextEditorWidget extends Widget {
     }
 
     selectCurrentLine() {
-        let cursorPosition = $(this.text).prop('selectionStart');
-        let line = $(this.text).val().substr(0, cursorPosition).split('\n').length;
-
-        $('.line-number').removeClass('active-line-number');
-        this.margin.childNodes[line - 1].childNodes[0].classList.add('active-line-number');
-        let scrollTop = $(this.text).scrollTop();
-        this.margin.scrollTop = scrollTop;
+        setTimeout(() => {
+            let cursorPosition = $(this.text).prop('selectionStart');
+            let line = $(this.text).val().substr(0, cursorPosition).split('\n').length;
+    
+            $('.line-number').removeClass('active-line-number');
+            this.margin.childNodes[line - 1].childNodes[0].classList.add('active-line-number');
+            let scrollTop = $(this.text).scrollTop();
+            this.margin.scrollTop = scrollTop;
+        }, 10);
     }
 
     refresh() {

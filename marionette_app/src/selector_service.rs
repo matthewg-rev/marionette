@@ -1,15 +1,16 @@
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
-use dioxus::html::input_data::keyboard_types::Code;
+use std::rc::Rc;
+
 use dioxus::prelude::*;
-use dioxus_router::prelude::*;
-use dioxus_desktop::{LogicalSize, use_window};
+use dioxus::desktop::{use_window, LogicalSize, WindowBuilder, DesktopService};
 use dioxus_html_macro::*;
+use futures::StreamExt;
+
+use crate::on_result;
 use crate::states::explorer::{ExplorerState, FileEntry};
 use crate::states::selector::SelectorState;
 
-use crate::on_result;
-use crate::msgbox::{Msg, MsgButtons, MsgResult, MsgSize, MsgType};
+use crate::msgbox::{Msg, MsgButtons, MsgResult, MsgType};
 
 pub fn icon_info_from_file(file: FileEntry) -> (String, String, String, String, String) {
     let lookup: HashMap<&str, (&str, &str, &str, &str, &str)> = HashMap::from([
@@ -44,10 +45,34 @@ pub fn icon_info_from_file(file: FileEntry) -> (String, String, String, String, 
     (String::from("NerdFontsSymbols Nerd Font"), String::from("󰈤"), String::from("#bebebe"), String::from("1.2em"), String::from(""))
 }
 
-pub fn projects_container(cx: Scope) -> Element {
-    let window = use_window(cx);
-    let router = use_router(cx);
-    let selector_state = use_shared_state::<SelectorState>(cx).unwrap();
+pub fn projects_container() -> Element {
+    let window = use_window();
+    let router = router();
+    let selector_state = use_context::<Signal<SelectorState>>();
+
+    let mut msgbox = Msg::new(
+        format!(
+            "Testing testing 123 awesome sauce!",
+        ),
+        "Open Project".to_string(),
+        MsgType::Warning,
+        MsgButtons::YesNo
+    );
+    msgbox.display(&window);
+
+    on_result!(msgbox, value, {
+        if value == MsgResult::Yes {
+            let mut msgbox = Msg::new(
+                format!(
+                    "lol nice",
+                ),
+                "Open Project".to_string(),
+                MsgType::Info,
+                MsgButtons::YesNo
+            );
+            msgbox.display(&window);
+        }
+    });
 
     let projects = html!(
         <div class="projects_grid_container">
@@ -128,31 +153,33 @@ pub fn projects_container(cx: Scope) -> Element {
             }
         </div>
     );
-    render!(projects)
+    rsx!{
+        {projects}
+    }
 }
 
-pub fn explorer_container(cx: Scope) -> Element {
-    let window = use_window(cx);
-    let selector_state = use_shared_state::<SelectorState>(cx).unwrap();
+pub fn refresh_file_explorer(window: Rc<DesktopService>, selector_state: Signal<SelectorState>) {
+    let mut explorer_state = selector_state;
+    let path = explorer_state.read().explorer_state.full_path();
+    if !std::path::Path::new(&path).exists() {
+        let msg = Msg::new(format!("The path {} does not exist.", path), "Error setting path".to_string(), MsgType::Error, MsgButtons::OkCancel);
+        msg.display(&window);
+    }
+    explorer_state.write().explorer_state.refresh_directory();
+}
 
-    let refresh_file_explorer = move || {
-        let mut explorer_state = selector_state.write();
-        let path = explorer_state.explorer_state.full_path();
-        if !std::path::Path::new(&path).exists() {
-            Msg::new(format!("The path {} does not exist.", path), "Error setting path".to_string(), MsgType::Error, MsgButtons::OkCancel, MsgSize::Fit).display(window);
-            return;
-        }
-        explorer_state.explorer_state.refresh_directory();
-    };
+pub fn explorer_container() -> Element {
+    let mut selector_state = use_context::<Signal<SelectorState>>();
 
     let explorer = html!(
         <div class="file_explorer_top_bar">
             <input class="file_explorer_path" placeholder="Path to folder" value="{selector_state.read().explorer_state.full_path()}" oninput={move |evt| {
                 let mut selector_state = selector_state.write();
-                selector_state.explorer_state.set_working_directory(evt.value.clone());
+                selector_state.explorer_state.set_working_directory(evt.value().clone());
             }} onkeydown={move|evt| {
                 if evt.code() == Code::Enter {
-                    refresh_file_explorer();
+                    let window = use_window();
+                    refresh_file_explorer(window.clone(), selector_state.clone());
                 }
             }}/>
 
@@ -177,7 +204,8 @@ pub fn explorer_container(cx: Scope) -> Element {
             </div>
 
             <div class="file_explorer_button" onclick={move |_| {
-                    refresh_file_explorer();
+                    let window = use_window();
+                    refresh_file_explorer(window.clone(), selector_state.clone());
                 }}>
                 <svg style="width: 20px; height: 15px;" id="refresh_button" view_box="0 0 32 32">
                     <path id="svg-data" d="M12,10H6.78A11,11,0,0,1,27,16h2A13,13,0,0,0,6,7.68V4H4v8h8Z"/>
@@ -194,7 +222,7 @@ pub fn explorer_container(cx: Scope) -> Element {
                     let folder_name = folder.file_name.clone();
                     let icon_info = icon_info_from_file(folder.clone());
                     html!(
-                        <div id="file_entry" ondblclick={move |_| {
+                        <div id="file_entry" ondoubleclick={move |_| {
                             let mut selector_state = selector_state.write();
                             selector_state.explorer_state.go_into_dir(folder_name.clone());
                         }}>
@@ -235,12 +263,15 @@ pub fn explorer_container(cx: Scope) -> Element {
             }
         </div>
     );
-    render!(explorer)
+
+    rsx! {
+        {explorer}
+    }
 }
 
-pub fn bottom_bar_container(cx: Scope) -> Element {
-    let navigator = use_navigator(cx);
-    let selector_state = use_shared_state::<SelectorState>(cx).unwrap();
+pub fn bottom_bar_container() -> Element {
+    let navigator = use_navigator();
+    let mut selector_state = use_context::<Signal<SelectorState>>();
 
     let bottom_bar = html!(
         <div class="bottom_bar">
@@ -250,7 +281,7 @@ pub fn bottom_bar_container(cx: Scope) -> Element {
                 value="{selector_state.read().selected_path}"
                 oninput={ move |evt| {
                     let mut selector_state = selector_state.write();
-                    selector_state.selected_path = evt.value.clone();
+                    selector_state.selected_path = evt.value().clone();
                 }
             }/>
 
@@ -269,12 +300,14 @@ pub fn bottom_bar_container(cx: Scope) -> Element {
             }>"Analyze"</div>
         </div>
     );
-    render!(bottom_bar)
+    rsx! { 
+        {bottom_bar}
+    }
 }
 
-pub fn header_container(cx: Scope) -> Element {
-    let navigator = use_navigator(cx);
-    let route: crate::Route = use_route(cx).unwrap();
+pub fn header_container() -> Element {
+    let navigator = use_navigator();
+    let route = use_route::<crate::Route>();
     let tab_str = match route {
         crate::Route::OpenTab { tab } => tab,
         _ => 0
@@ -309,36 +342,41 @@ pub fn header_container(cx: Scope) -> Element {
             </div>
         </div>
     );
-    render!(header)
+
+    rsx! {
+        {header}
+    }
 }
 
 #[component]
-pub fn OpenTab(cx: Scope, tab: usize) -> Element {
-    let window = use_window(cx);
+pub fn OpenTab(tab: usize) -> Element {
+    let window = use_window();
     window.set_title("Marionette Analysis Selector");
     window.set_resizable(true);
     window.set_min_inner_size(Some(LogicalSize::new(450, 300)));
 
-    let route: crate::Route = use_route(cx).unwrap();
+    let route = use_route::<crate::Route>();
     let tab_str = match route {
         crate::Route::OpenTab { tab } => tab,
         _ => 0
     };
 
-    cx.render(rsx!(
-        style { include_str!("resources/styles/analysis-selector/analysis-selector.css") }
-        html!(
-            { rsx! { header_container {} } }
-            {
-                match tab_str {
-                    1 => rsx! { projects_container {} },
-                    2 => rsx! { explorer_container {} },
-                    _ => html!(
-                        <div class="repeating_diagonal_lines"></div>
-                    )
-                }
+    let page_content = html!(
+        { rsx! { header_container {} } }
+        {
+            match tab_str {
+                1 => rsx! { projects_container {} },
+                2 => rsx! { explorer_container {} },
+                _ => html!(
+                    <div class="repeating_diagonal_lines"></div>
+                )
             }
-            { rsx! { bottom_bar_container {} } }
-        )
-    ))
+        }
+        { rsx! { bottom_bar_container {} } }
+    );
+
+    rsx!{
+        style { {include_str!("resources/styles/analysis-selector/analysis-selector.css")} }
+        {page_content}
+    }
 }

@@ -1,12 +1,14 @@
 use dioxus::prelude::*;
-use dioxus_html_macro::html;
-use dioxus_desktop::{Config, DesktopContext, LogicalSize, use_window, WindowBuilder};
+use dioxus::desktop::{Config, LogicalSize, DesktopContext, WindowBuilder, use_window};
+use dioxus_html_macro::*;
+
+use futures::StreamExt;
 use futures_channel::mpsc::{channel, Receiver, Sender};
 
 #[macro_export]
 macro_rules! on_result {
-    ($cx:expr, $msgbox:expr, $value:ident, $code:block) => {
-        $cx.spawn(async move {
+    ($msgbox:expr, $value:ident, $code:block) => {
+        spawn(async move {
             if let Some($value) = $msgbox.receiver.next().await {
                 $code
             }
@@ -14,13 +16,7 @@ macro_rules! on_result {
     }
 }
 
-#[derive(Clone)]
-pub enum MsgSize {
-    Fit,
-    UseMaxCharsPerLine(i32),
-}
-
-#[derive(Clone)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum MsgType {
     Success,
 
@@ -29,7 +25,7 @@ pub enum MsgType {
     Error,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum MsgButtons {
     Ok,
     OkCancel,
@@ -72,7 +68,6 @@ pub struct Msg {
     pub msg_title: String,
     pub msg_type: MsgType,
     pub msg_buttons: MsgButtons,
-    pub msg_height: MsgSize,
 
     pub sender: Sender<MsgResult>,
     pub receiver: Receiver<MsgResult>,
@@ -96,161 +91,108 @@ pub fn icon_color(t: MsgType) -> String {
     }.to_string()
 }
 
+#[derive(Clone, PartialEq, Props)]
 struct AppProps {
     icon: MsgType,
     title: String,
     msg: String,
     buttons: MsgButtons,
-    sender: Sender<MsgResult>,
 }
 
 impl Msg {
-    pub fn new(msg: String, msg_title: String, msg_type: MsgType, msg_buttons: MsgButtons, msg_height: MsgSize) -> Self {
+    pub fn new(msg: String, msg_title: String, msg_type: MsgType, msg_buttons: MsgButtons) -> Self {
         let (tx, rx) = channel::<MsgResult>(1);
         Self {
             msg,
             msg_title,
             msg_type,
             msg_buttons,
-            msg_height,
             sender: tx,
             receiver: rx,
         }
     }
 
-    pub fn get_lines(&self, max_chars_per_line: i32) -> i32 {
-        let mut lines = 1;
-        for (chars, c) in self.msg.chars().enumerate() {
-            if c == '\n' {
-                if self.msg.chars().count()-1 == chars {
-                    break;
-                }
-                lines += 1;
-            }
-        }
-        let mut chars = 0;
-        for c in self.msg.chars() {
-            if c == '\t' {
-                chars += 4;
-            } else if c == '\n' {
-                chars = 0;
-            } else if chars >= max_chars_per_line {
-                chars = 0;
-                lines += 1;
-            } else {
-                chars += 1;
-            }
-        }
-        lines
-    }
-
-    pub fn get_longest_line(&self) -> i32 {
-        let mut longest_line = 0;
-        let mut chars = 0;
-        for c in self.msg.chars() {
-            if c == '\n' {
-                if chars > longest_line {
-                    longest_line = chars;
-                }
-                chars = 0;
-            } else if c == '\t' {
-                chars += 4;
-            } else {
-                chars += 1;
-            }
-        }
-        if chars > longest_line {
-            longest_line = chars;
-        }
-        longest_line
-    }
-
     pub fn get_msg_height(&self) -> f32 {
-        let mut msgbox_height = 31.0 + 32.0;
-        let scale = match self.msg_height {
-            MsgSize::Fit => {
-                let max_chars_per_line = self.get_longest_line();
-                self.get_lines(max_chars_per_line)
-            },
-            MsgSize::UseMaxCharsPerLine(max_chars_per_line) => {
-                self.get_lines(max_chars_per_line)
-            },
-        };
-        let msg_container_height = 13.33 + (scale as f32 * 21.0);
-        msgbox_height += msg_container_height;
-        msgbox_height
+        // TODO: JavaScript Rust Interop using bytestream impl
+        200.0
     }
 
     pub fn get_msg_width(&self) -> f32 {
-        let max_chars_per_line = match self.msg_height {
-            MsgSize::Fit => {
-                self.get_longest_line()
-            },
-            MsgSize::UseMaxCharsPerLine(max_chars_per_line_user) => {
-                max_chars_per_line_user
-            },
-        };
-        // hey matt, if you are reading this and wondering
-        // "why the hell am i adding 50.0 out of nowhere?"
-        // its because the msgbox container has 25.0 padding on each side
-        // so shut up and deal with it
-        (6.0 * max_chars_per_line as f32) + 50.0
+        // TODO: JavaScript Rust Interop using bytestream impl
+        200.0
     }
 
     pub fn new_dom(&self) -> VirtualDom {
-        VirtualDom::new_with_props(move |cx| {
-            let window = use_window(cx);
-            cx.render(rsx!(
-                    style { include_str!("resources/styles/msgbox/msgbox.css") }
-                    html!(
-                        <div class="msgbox_icon_title">
-                            <span class="msgbox_icon" style="color: {icon_color(cx.props.icon.clone())}">{msg_icon(cx.props.icon.clone())}</span>
-                            <span class="msgbox_title">{cx.props.title.clone()}</span>
-                        </div>
-                        <span class="msgbox_message">{cx.props.msg.clone()}</span>
-                        <div class="button_row">
-                        {
-                            match cx.props.buttons.clone() {
-                                MsgButtons::Ok => html!(
-                                    <div class="msgbox_buttons">
-                                        <div class="msgbox_button" onclick={move |_| {
-                                            let _ = cx.props.sender.to_owned().try_send(MsgResult::Ok);
-                                            window.close();
-                                        }}>"Ok"</div>
-                                    </div>
-                                ),
-                                MsgButtons::OkCancel => html!(
-                                    <div class="msgbox_button" onclick={move |_| {
-                                        let _ = cx.props.sender.to_owned().try_send(MsgResult::Ok);
-                                        window.close();
-                                    }}>"Ok"</div>
-                                    <div class="msgbox_button" onclick={move |_| {
-                                        let _ = cx.props.sender.to_owned().try_send(MsgResult::Cancel);
-                                        window.close();
-                                    }}>"Cancel"</div>
-                                ),
-                                MsgButtons::YesNo => html!(
-                                    <div class="msgbox_button" onclick={move |_| {
-                                        let _ = cx.props.sender.to_owned().try_send(MsgResult::Yes);
-                                        window.close();
-                                    }}>"Yes"</div>
-                                    <div class="msgbox_button" onclick={move |_| {
-                                        let _ = cx.props.sender.to_owned().try_send(MsgResult::No);
-                                        window.close();
-                                    }}>"No"</div>
-                                ),
-                                _ => html!()
-                            }
-                        }
-                    </div>
-                )))
-        }, AppProps {
+        let props = AppProps {
             icon: self.msg_type.clone(),
             title: self.msg_title.clone(),
             msg: self.msg.clone(),
             buttons: self.msg_buttons.clone(),
-            sender: self.sender.clone()
-        })
+        };
+
+        let senderClone = self.sender.clone();
+        VirtualDom::new_with_props(move |props: AppProps| {
+            let senderSignal = use_context_provider(|| Signal::new(senderClone.clone()));
+
+            rsx!(
+                style { {include_str!("resources/styles/msgbox/msgbox.css")} }
+                {html!(
+                    <div class="msgbox_icon_title">
+                        <span class="msgbox_icon" style="color: {icon_color(props.icon.clone())}">{msg_icon(props.icon.clone())}</span>
+                        <span class="msgbox_title">{props.title.clone()}</span>
+                    </div>
+                    <span class="msgbox_message">{props.msg.clone()}</span>
+                    <div class="button_row">
+                    {
+                        match props.buttons.clone() {
+                            MsgButtons::Ok => html!(
+                                <div class="msgbox_buttons">
+                                    <div class="msgbox_button" onclick={move |_| {
+                                        let window = use_window();
+                                        let mut sender = use_context::<Signal<Sender<MsgResult>>>();
+                                        let _ = sender.write().to_owned().try_send(MsgResult::Ok);
+                                        window.close();
+                                    }}>"Ok"</div>
+                                </div>
+                            ),
+                            MsgButtons::OkCancel => {
+                                html!(
+                                    <div class="msgbox_button" onclick={move |_| {
+                                        let window = use_window();
+                                        let mut sender = use_context::<Signal<Sender<MsgResult>>>();
+                                        let _ = sender.write().to_owned().try_send(MsgResult::Ok);
+                                        window.close();
+                                    }}>"Ok"</div>
+                                    <div class="msgbox_button" onclick={move |_| {
+                                        let window = use_window();
+                                        let mut sender = use_context::<Signal<Sender<MsgResult>>>();
+                                        let _ = sender.write().to_owned().try_send(MsgResult::Cancel);
+                                        window.close();
+                                    }}>"Cancel"</div>
+                                )
+                            },
+                            MsgButtons::YesNo => {
+                                html!(
+                                    <div class="msgbox_button" onclick={move |_| {
+                                        let window = use_window();
+                                        let mut sender = use_context::<Signal<Sender<MsgResult>>>();
+                                        let _ = sender.write().to_owned().try_send(MsgResult::Yes);
+                                        window.close();
+                                    }}>"Yes"</div>
+                                    <div class="msgbox_button" onclick={move |_| {
+                                        let window = use_window();
+                                        let mut sender = use_context::<Signal<Sender<MsgResult>>>();
+                                        let _ = sender.write().to_owned().try_send(MsgResult::No);
+                                        window.close();
+                                    }}>"No"</div>
+                                )
+                            },
+                            _ => html!()
+                        }
+                    }
+                </div>
+            )})
+        }, props)
     }
 
     pub fn display(&self, desktop: &DesktopContext) {
@@ -262,7 +204,8 @@ impl Msg {
                 .with_resizable(false)
                 .with_min_inner_size(LogicalSize::new(msgbox_width, msgbox_height))
                 .with_max_inner_size(LogicalSize::new(msgbox_width, msgbox_height))
-        );
+                .with_always_on_top(true)
+        ).with_menu(None);
 
         desktop.new_window(self.new_dom(), cfg);
     }

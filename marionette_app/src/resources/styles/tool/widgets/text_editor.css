@@ -95,7 +95,6 @@
 }
 
 #widget > .text-editor > .margin {
-    flex-direction: column;
     width: 70px;
     height: 100%;
     background: transparent;
