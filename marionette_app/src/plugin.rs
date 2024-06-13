@@ -110,62 +110,75 @@ impl Plugin {
         // get non-file-extension name
         let name = path.file_stem();
         if name.is_none() {
-            panic!("File name is empty: {}", file_path);
+            return Err(());
         }
         let name = name.unwrap().to_str().unwrap();
 
         // check if json config exists
         let json_path = path.parent().unwrap().join(format!("{}.json", name));
         
-        if json_path.exists() {
-            let json = fs::read_to_string(json_path.clone()).unwrap();
-            let json: serde_json::Value = serde_json::from_str(&json).unwrap();
+        if !json_path.exists() {
+            return Err(());
+        }
 
-            let name = Plugin::get_str(json.clone(), "name");
-            let version = Plugin::get_str(json.clone(), "version");
-            let author = Plugin::get_str(json.clone(), "author");
-            let description = Plugin::get_str(json.clone(), "description");
-            let enabled = Plugin::get_bool(json.clone(), "enabled");
+        let json = fs::read_to_string(json_path.clone());
+        let json = match json {
+            Ok(json) => json,
+            Err(_) => return Err(())
+        };
 
-            match (name, version, author, description, enabled) {
-                (Ok(name), Ok(version), Ok(author), Ok(description), Ok(enabled)) => {
-                    plugin.name = name;
-                    plugin.version = version;
-                    plugin.author = author;
-                    plugin.description = description;
-                    plugin.enabled = enabled;
-                },
+        let json = serde_json::from_str(&json);
+        let json: serde_json::Value = match json {
+            Ok(json) => json,
+            Err(_) => return Err(())
+        };
+
+        let name = Plugin::get_str(json.clone(), "name");
+        let version = Plugin::get_str(json.clone(), "version");
+        let author = Plugin::get_str(json.clone(), "author");
+        let description = Plugin::get_str(json.clone(), "description");
+        let enabled = Plugin::get_bool(json.clone(), "enabled");
+
+        match (name, version, author, description, enabled) {
+            (Ok(name), Ok(version), Ok(author), Ok(description), Ok(enabled)) => {
+                plugin.name = name;
+                plugin.version = version;
+                plugin.author = author;
+                plugin.description = description;
+                plugin.enabled = enabled;
+            },
+            _ => panic!("JSON config for py-plugin is invalid: {}", json_path.to_str().unwrap())
+        }
+
+        if !json["settings"].is_object() {
+            return Ok(plugin);
+        }
+        
+        for (setting, value) in json["settings"].as_object().unwrap() {
+            if !value.is_object() {
+                continue;
+            }
+
+            let mut plugin_setting = PluginSetting {
+                setting: String::new(),
+                flag: None,
+                string: None,
+                number: None
+            };
+            plugin_setting.setting = setting.clone();
+
+            let flag = Plugin::get_bool(value.clone(), "flag");
+            let string = Plugin::get_str(value.clone(), "string");
+            let number = Plugin::get_num(value.clone(), "number");
+
+            match (flag, string, number) {
+                (Ok(flag), _, _) => plugin_setting.flag = Some(flag),
+                (_, Ok(string), _) => plugin_setting.string = Some(string),
+                (_, _, Ok(number)) => plugin_setting.number = Some(number),
                 _ => panic!("JSON config for py-plugin is invalid: {}", json_path.to_str().unwrap())
             }
 
-            if json["settings"].is_object() {
-                for (setting, value) in json["settings"].as_object().unwrap() {
-                    if value.is_object() {
-                        let mut plugin_setting = PluginSetting {
-                            setting: String::new(),
-                            flag: None,
-                            string: None,
-                            number: None
-                        };
-                        plugin_setting.setting = setting.clone();
-
-                        let flag = Plugin::get_bool(value.clone(), "flag");
-                        let string = Plugin::get_str(value.clone(), "string");
-                        let number = Plugin::get_num(value.clone(), "number");
-
-                        match (flag, string, number) {
-                            (Ok(flag), _, _) => plugin_setting.flag = Some(flag),
-                            (_, Ok(string), _) => plugin_setting.string = Some(string),
-                            (_, _, Ok(number)) => plugin_setting.number = Some(number),
-                            _ => panic!("JSON config for py-plugin is invalid: {}", json_path.to_str().unwrap())
-                        }
-
-                        plugin.settings.push(plugin_setting);
-                    }
-                }
-            }
-        } else {
-            panic!("JSON config for py-plugin does not exist: {}", json_path.to_str().unwrap());
+            plugin.settings.push(plugin_setting);
         }
         
         Ok(plugin)

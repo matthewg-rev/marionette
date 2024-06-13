@@ -62,6 +62,7 @@ fn portal() -> Element {
     let mut plugin_dir = current_exe.parent().unwrap().to_path_buf();
     plugin_dir.push("plugins");
     let plugins_dir = fs::read_dir(plugin_dir).unwrap();
+    
     for entry in plugins_dir {
         let entry = entry.unwrap();
         let path = entry.path();
