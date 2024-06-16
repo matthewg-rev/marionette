@@ -37,27 +37,30 @@ struct PluginInterface {
 impl PluginInterface {
     fn get_str_setting(&self, setting: &str) -> Option<String> {
         for plugin_setting in &self.plugin.settings {
-            if plugin_setting.setting == setting {
-                return plugin_setting.string.clone();
+            if plugin_setting.setting != setting {
+                continue;
             }
+            return plugin_setting.string.clone();
         }
         None
     }
 
     fn get_num_setting(&self, setting: &str) -> Option<f64> {
         for plugin_setting in &self.plugin.settings {
-            if plugin_setting.setting == setting {
-                return plugin_setting.number.clone();
+            if plugin_setting.setting != setting {
+                continue;
             }
+            return plugin_setting.number.clone();
         }
         None
     }
 
     fn get_bool_setting(&self, setting: &str) -> Option<bool> {
         for plugin_setting in &self.plugin.settings {
-            if plugin_setting.setting == setting {
-                return plugin_setting.flag.clone();
+            if plugin_setting.setting != setting {
+                continue;
             }
+            return plugin_setting.flag.clone();
         }
         None
     }
@@ -66,26 +69,23 @@ impl PluginInterface {
 impl Plugin {
     pub fn get_bool(value: Value, key: &str) -> Result<bool, ()> {
         if value[key].is_boolean() {
-            Ok(value[key].as_bool().unwrap())
-        } else {
-            Err(())
+            return Ok(value[key].as_bool().unwrap());
         }
+        Err(())
     }
 
     pub fn get_str(value: Value, key: &str) -> Result<String, ()> {
         if value[key].is_string() {
-            Ok(value[key].as_str().unwrap().to_string())
-        } else {
-            Err(())
+            return Ok(value[key].as_str().unwrap().to_string());
         }
+        Err(())
     }
     
     pub fn get_num(value: Value, key: &str) -> Result<f64, ()> {
         if value[key].is_number() {
-            Ok(value[key].as_f64().unwrap())
-        } else {
-            Err(())
+            return Ok(value[key].as_f64().unwrap());
         }
+        Err(())
     }
 
     pub fn new(file_path: &str) -> Result<Plugin, ()> {

@@ -35,18 +35,11 @@ pub enum Route {
 }
 
 fn main() {
-    let launcher = LaunchBuilder::new()
-        .with_cfg(
-            Config::default()
-                .with_menu(None)
-                .with_window(
-                    WindowBuilder::new()
-                        .with_always_on_top(false)
-                        .with_resizable(false)
-                        .with_title("Marionette")
-                )
-        ).launch(portal);
-    launch(portal);
+    let launcher = LaunchBuilder::new().with_cfg(
+        Config::default().with_menu(None).with_window(
+            WindowBuilder::new().with_always_on_top(false).with_resizable(false).with_title("Marionette")
+        )
+    ).launch(portal);
 }
 
 #[component]
@@ -62,11 +55,12 @@ fn portal() -> Element {
     let mut plugin_dir = current_exe.parent().unwrap().to_path_buf();
     plugin_dir.push("plugins");
     let plugins_dir = fs::read_dir(plugin_dir).unwrap();
-    
+
     for entry in plugins_dir {
         let entry = entry.unwrap();
         let path = entry.path();
         let extension = path.extension().unwrap_or_default();
+
         if extension != "py" {
             continue;
         }
