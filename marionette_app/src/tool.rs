@@ -1,7 +1,20 @@
 use dioxus::{prelude::*};
 use dioxus::desktop::{use_window};
-use dioxus_html_macro::html;
 use crate::states::selector::SelectorState;
+
+#[derive(Clone, PartialEq, Props)]
+pub struct ToolbarCategoryProps {
+    pub name: String,
+    pub children: Element
+}
+
+pub fn ToolbarCategory(props: ToolbarCategoryProps) -> Element {
+    rsx! {
+        div {
+            
+        }
+    }
+}
 
 #[component]
 pub fn Tool() -> Element {
@@ -10,9 +23,6 @@ pub fn Tool() -> Element {
 
     let selector_state = use_context::<Signal<SelectorState>>();
     let selected = selector_state.read().selected_path.clone();
-
-    // communication pipeline
-    
 
     rsx! {
         style { {include_str!("resources/styles/tool/tool.css")} },
@@ -44,10 +54,12 @@ pub fn Tool() -> Element {
         script { {include_str!("resources/scripts/tool/toolbar.js")} },
         script { {include_str!("resources/scripts/tool/tool.js")} },
 
-        {html!(
-            <div id="toolbar"></div>
-            <div class="canvas">
-            </div>
-        )}
+        div {
+            id: "toolbar"
+        }
+
+        div {
+            class: "canvas"
+        }
     }
 }

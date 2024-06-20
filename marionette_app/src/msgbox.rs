@@ -99,6 +99,22 @@ struct AppProps {
     buttons: MsgButtons,
 }
 
+#[derive(Clone, PartialEq, Props)]
+pub struct MsgBoxButtonProps {
+    pub text: &'static str,
+    pub onclick: EventHandler<MouseEvent>,
+}
+
+pub fn MsgBoxButton(props: MsgBoxButtonProps) -> Element {
+    rsx! {
+        div {
+            class: "msgbox_button",
+            onclick: move |evt| props.onclick.call(evt),
+            {props.text.clone()}
+        }
+    }
+}
+
 impl Msg {
     pub fn new(msg: String, msg_title: String, msg_type: MsgType, msg_buttons: MsgButtons) -> Self {
         let (tx, rx) = channel::<MsgResult>(1);
@@ -131,67 +147,169 @@ impl Msg {
         };
 
         let senderClone = self.sender.clone();
+
         VirtualDom::new_with_props(move |props: AppProps| {
             let senderSignal = use_context_provider(|| Signal::new(senderClone.clone()));
 
-            rsx!(
+            rsx! {
                 style { {include_str!("resources/styles/msgbox/msgbox.css")} }
-                {html!(
-                    <div class="msgbox_icon_title">
-                        <span class="msgbox_icon" style="color: {icon_color(props.icon.clone())}">{msg_icon(props.icon.clone())}</span>
-                        <span class="msgbox_title">{props.title.clone()}</span>
-                    </div>
-                    <span class="msgbox_message">{props.msg.clone()}</span>
-                    <div class="button_row">
-                    {
-                        match props.buttons.clone() {
-                            MsgButtons::Ok => html!(
-                                <div class="msgbox_buttons">
-                                    <div class="msgbox_button" onclick={move |_| {
+                div {
+                    class: "msgbox_icon_tile",
+                    span {
+                        class: "msgbox_icon",
+                        style: format!("color: {}", icon_color(props.icon.clone())),
+                        {msg_icon(props.icon.clone())}
+                    },
+                    span {
+                        class: "msgbox_title",
+                        {props.title.clone()}
+                    }
+                }
+
+                span {
+                    class: "msgbox_message",
+                    {props.msg.clone()}
+                }
+
+                div {
+                    class: "button_row",
+
+                    match props.buttons {
+                        MsgButtons::Ok => {
+                            rsx! {
+                                MsgBoxButton {
+                                    text: "Ok",
+                                    onclick: move |_| {
                                         let window = use_window();
                                         let mut sender = use_context::<Signal<Sender<MsgResult>>>();
                                         let _ = sender.write().to_owned().try_send(MsgResult::Ok);
                                         window.close();
-                                    }}>"Ok"</div>
-                                </div>
-                            ),
-                            MsgButtons::OkCancel => {
-                                html!(
-                                    <div class="msgbox_button" onclick={move |_| {
+                                    }
+                                }
+                            }
+                        },
+                        MsgButtons::OkCancel => {
+                            rsx! {
+                                MsgBoxButton {
+                                    text: "Ok",
+                                    onclick: move |_| {
                                         let window = use_window();
                                         let mut sender = use_context::<Signal<Sender<MsgResult>>>();
                                         let _ = sender.write().to_owned().try_send(MsgResult::Ok);
                                         window.close();
-                                    }}>"Ok"</div>
-                                    <div class="msgbox_button" onclick={move |_| {
+                                    }
+                                },
+                                MsgBoxButton {
+                                    text: "Cancel",
+                                    onclick: move |_| {
                                         let window = use_window();
                                         let mut sender = use_context::<Signal<Sender<MsgResult>>>();
                                         let _ = sender.write().to_owned().try_send(MsgResult::Cancel);
                                         window.close();
-                                    }}>"Cancel"</div>
-                                )
-                            },
-                            MsgButtons::YesNo => {
-                                html!(
-                                    <div class="msgbox_button" onclick={move |_| {
+                                    }
+                                }
+                            }
+                        },
+                        MsgButtons::YesNo => {
+                            rsx! {
+                                MsgBoxButton {
+                                    text: "Yes",
+                                    onclick: move |_| {
                                         let window = use_window();
                                         let mut sender = use_context::<Signal<Sender<MsgResult>>>();
                                         let _ = sender.write().to_owned().try_send(MsgResult::Yes);
                                         window.close();
-                                    }}>"Yes"</div>
-                                    <div class="msgbox_button" onclick={move |_| {
+                                    }
+                                },
+                                MsgBoxButton {
+                                    text: "No",
+                                    onclick: move |_| {
                                         let window = use_window();
                                         let mut sender = use_context::<Signal<Sender<MsgResult>>>();
                                         let _ = sender.write().to_owned().try_send(MsgResult::No);
                                         window.close();
-                                    }}>"No"</div>
-                                )
-                            },
-                            _ => html!()
+                                    }
+                                }
+                            }
+                        },
+                        MsgButtons::YesNoCancel => {
+                            rsx! {
+                                MsgBoxButton {
+                                    text: "Yes",
+                                    onclick: move |_| {
+                                        let window = use_window();
+                                        let mut sender = use_context::<Signal<Sender<MsgResult>>>();
+                                        let _ = sender.write().to_owned().try_send(MsgResult::Yes);
+                                        window.close();
+                                    }
+                                },
+                                MsgBoxButton {
+                                    text: "No",
+                                    onclick: move |_| {
+                                        let window = use_window();
+                                        let mut sender = use_context::<Signal<Sender<MsgResult>>>();
+                                        let _ = sender.write().to_owned().try_send(MsgResult::No);
+                                        window.close();
+                                    }
+                                }
+                            }
+                        },
+                        MsgButtons::AbortRetryIgnore => {
+                            rsx! {
+                                MsgBoxButton {
+                                    text: "Abort",
+                                    onclick: move |_| {
+                                        let window = use_window();
+                                        let mut sender = use_context::<Signal<Sender<MsgResult>>>();
+                                        let _ = sender.write().to_owned().try_send(MsgResult::Abort);
+                                        window.close();
+                                    }
+                                },
+                                MsgBoxButton {
+                                    text: "Retry",
+                                    onclick: move |_| {
+                                        let window = use_window();
+                                        let mut sender = use_context::<Signal<Sender<MsgResult>>>();
+                                        let _ = sender.write().to_owned().try_send(MsgResult::Retry);
+                                        window.close();
+                                    }
+                                },
+                                MsgBoxButton {
+                                    text: "Ignore",
+                                    onclick: move |_| {
+                                        let window = use_window();
+                                        let mut sender = use_context::<Signal<Sender<MsgResult>>>();
+                                        let _ = sender.write().to_owned().try_send(MsgResult::Ignore);
+                                        window.close();
+                                    }
+                                }
+                            }
+                        },
+                        MsgButtons::RetryCancel => {
+                            rsx! {
+                                MsgBoxButton {
+                                    text: "Retry",
+                                    onclick: move |_| {
+                                        let window = use_window();
+                                        let mut sender = use_context::<Signal<Sender<MsgResult>>>();
+                                        let _ = sender.write().to_owned().try_send(MsgResult::Retry);
+                                        window.close();
+                                    }
+                                },
+                                MsgBoxButton {
+                                    text: "Cancel",
+                                    onclick: move |_| {
+                                        let window = use_window();
+                                        let mut sender = use_context::<Signal<Sender<MsgResult>>>();
+                                        let _ = sender.write().to_owned().try_send(MsgResult::Cancel);
+                                        window.close();
+                                    }
+                                }
+                            }
                         }
                     }
-                </div>
-            )})
+                }
+            }
         }, props)
     }
 
