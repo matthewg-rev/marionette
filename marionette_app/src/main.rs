@@ -54,25 +54,28 @@ fn portal() -> Element {
     let current_exe = env::current_exe().unwrap();
     let mut plugin_dir = current_exe.parent().unwrap().to_path_buf();
     plugin_dir.push("plugins");
-    let plugins_dir = fs::read_dir(plugin_dir).unwrap();
+    let plugins_dir = fs::read_dir(plugin_dir);
 
-    for entry in plugins_dir {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        let extension = path.extension().unwrap_or_default();
-
-        if extension != "py" {
-            continue;
-        }
-
-        let path = path.to_str().unwrap();
-        let plugin = plugin::Plugin::new(path);
-        match plugin {
-            Ok(plugin) => { 
-                let result = plugin.init();
-                plugins_vec.push(plugin);
-            },
-            Err(_) => continue,
+    if plugins_dir.is_ok() {
+        let plugins_dir = plugins_dir.unwrap();
+        for entry in plugins_dir {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            let extension = path.extension().unwrap_or_default();
+    
+            if extension != "py" {
+                continue;
+            }
+    
+            let path = path.to_str().unwrap();
+            let plugin = plugin::Plugin::new(path);
+            match plugin {
+                Ok(plugin) => { 
+                    let result = plugin.init();
+                    plugins_vec.push(plugin);
+                },
+                Err(_) => continue,
+            }
         }
     }
 
