@@ -26,6 +26,11 @@ class TextEditorWidget extends Widget {
 
         this.text.addEventListener('input', () => {
             this.lines = this.text.value.split('\n');
+
+            // NOTE: this might cause problems if we don't keep track of up to date requests
+            // i.e. performance issues, but it's fine for now?
+            let linterData = window.internalRequest('lint', this.text.value, false, false);
+
             this.refresh();
             this.selectCurrentLine();
         });

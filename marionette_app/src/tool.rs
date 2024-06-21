@@ -8,14 +8,6 @@ pub struct ToolbarCategoryProps {
     pub children: Element
 }
 
-pub fn ToolbarCategory(props: ToolbarCategoryProps) -> Element {
-    rsx! {
-        div {
-            
-        }
-    }
-}
-
 #[component]
 pub fn Tool() -> Element {
     let window = use_window();
@@ -31,6 +23,7 @@ pub fn Tool() -> Element {
         style { {include_str!("resources/styles/tool/widgets/graph.css")} },
         style { {include_str!("resources/styles/tool/widgets/text_editor.css")} },
         style { {include_str!("resources/styles/tool/widgets/clock.css")} },
+        style { {include_str!("resources/styles/tool/widgets/log.css")} },
 
         script { {include_str!("resources/scripts/tool/jquery-3.7.1.min.js")} },
         script { {include_str!("resources/scripts/tool/dagre.min.js")} },
@@ -49,6 +42,7 @@ pub fn Tool() -> Element {
         script { {include_str!("resources/scripts/tool/widgets/graph.js")} },
         script { {include_str!("resources/scripts/tool/widgets/clock.js")} },
         script { {include_str!("resources/scripts/tool/widgets/text_editor.js")} },
+        script { {include_str!("resources/scripts/tool/widgets/log.js")} },
 
         script { {include_str!("resources/scripts/tool/canvas.js")} },
         script { {include_str!("resources/scripts/tool/toolbar.js")} },

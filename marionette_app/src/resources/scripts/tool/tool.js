@@ -18,7 +18,11 @@ widgets = new ToolbarCategory('Widgets');
         }));
 
         analysis.components.push(new ToolbarTool('Text View', function() {
-            ToolCanvas.addWidget(new TextEditorWidget('Text View', 400, 400));
+            ToolCanvas.addWidget(new TextEditorWidget('Text View', 401, 400));
+        }));
+
+        analysis.components.push(new ToolbarTool('Log View', function() {
+            ToolCanvas.addWidget(new LogWidget('Log View', 401, 400));
         }));
 
         widgets.components.push(analysis);

@@ -1,13 +1,12 @@
-// https://www.cs.unc.edu/techreports/89-034.pdf
 class BoxRenderer extends GraphRenderer {
-    constructor() {
-        super();
+    constructor(camera) {
+        super(camera);
 
         this.graph = null;
         this.root = null;
 
-        this.vertexRenderer = new BoxVertexRenderer();
-        this.edgeRenderer = new BoxEdgeRenderer();
+        this.vertexRenderer = new BoxVertexRenderer(this.camera);
+        this.edgeRenderer = new BoxEdgeRenderer(this.camera);
         this.drawingData = {
             vertexData: [],
             edgeData: []
@@ -147,8 +146,8 @@ class BoxRenderer extends GraphRenderer {
 }
 
 class BoxEdgeRenderer extends EdgeRenderer {
-    constructor() {
-        super();
+    constructor(camera) {
+        super(camera);
         this.vertexInfo = [];
     }
 
@@ -195,142 +194,72 @@ class BoxEdgeRenderer extends EdgeRenderer {
     }
 
     render(ctx, widget) {
-        let drawLine = (source, target, startX, startY, endMidX, endMidY, color) => {
-            let linePadding = EdgeRenderer.Config().PADDING.PADDING_LINE;
-            let above = startY > endMidY;
-            let below = startY < endMidY;
-            let left = startX > endMidX;
-            let right = startX < endMidX;
-            let endY = above ? target.targetTopY : target.targetBottomY;
+        const config = EdgeRenderer.Config();
+        const drawLine = (source, target, startX, startY, endMidX, endMidY, color) => {
+            const linePadding = config.PADDING.PADDING_LINE;
+            const above = startY > endMidY;
+            const left = startX > endMidX;
+            const right = startX < endMidX;
+            const endY = above ? target.targetTopY : target.targetBottomY;
 
             ctx.strokeStyle = color;
-            ctx.lineWidth = EdgeRenderer.Config().SIZES.SIZE_LINE;
+            ctx.lineWidth = config.SIZES.SIZE_LINE;
             ctx.beginPath();
 
-            let bendStartY = startY + linePadding;
-
+            const bendStartY = startY + linePadding;
             ctx.moveTo(startX, startY);
             ctx.lineTo(startX, bendStartY);
-            ctx.moveTo(startX, bendStartY);
 
             if (above) {
-                let horizontalDistance = (source.x + (source.width/2)) - startX;
-
-                let newX = startX;
-                if (left) newX = startX + horizontalDistance;
-                if (right) newX = startX - horizontalDistance;
+                const horizontalDistance = (source.x + (source.width / 2)) - startX;
+                let newX = startX + (left ? horizontalDistance : -horizontalDistance);
 
                 ctx.lineTo(newX, bendStartY);
-                ctx.moveTo(newX, bendStartY);
 
-                newX = startX + horizontalDistance + linePadding;
-                ctx.lineTo(newX, bendStartY);
-                ctx.moveTo(newX, bendStartY);
-
-                let verticalY = endY - linePadding;
+                newX += horizontalDistance + linePadding;
+                const verticalY = endY - linePadding;
                 ctx.lineTo(newX, verticalY);
-                ctx.moveTo(newX, verticalY);
                 ctx.lineTo(endMidX, verticalY);
-                ctx.moveTo(endMidX, verticalY);
             } else {
-                ctx.lineTo(startX, bendStartY);
-                ctx.moveTo(startX, bendStartY);
-
                 ctx.lineTo(endMidX, bendStartY);
-                ctx.moveTo(endMidX, bendStartY);
             }
 
             ctx.lineTo(endMidX, endY);
-
             ctx.stroke();
         };
 
         this.vertexInfo.forEach((sourceInfo) => {
-            let numTargets = sourceInfo.targets.length;
-            let remainder = numTargets % 2;
+            const numTargets = sourceInfo.targets.length;
+            const remainder = numTargets % 2;
+            const evened = numTargets - remainder;
+            const half = evened / 2;
 
-            if (numTargets == 1) {
-                let target = sourceInfo.targets[0];
+            let sourceX = sourceInfo.sourceMidX - (sourceInfo.source.width * config.PADDING.PADDING_BETWEEN_EDGES * half);
+            const sourceY = sourceInfo.sourceBottomY;
+
+            sourceInfo.targets.sort((a, b) => a.targetMidX - b.targetMidX);
+
+            sourceInfo.targets.forEach((target, index) => {
+                const color = index < half ? config.COLORS.COLOR_TRUE : (index >= numTargets - half ? config.COLORS.COLOR_FALSE : config.COLORS.COLOR_DIRECT);
+
                 drawLine(
                     sourceInfo.source,
                     target,
-
-                    sourceInfo.sourceMidX, 
-                    sourceInfo.sourceBottomY, 
-                    target.targetMidX, 
-                    target.targetMidY, 
-                    EdgeRenderer.Config().COLORS.COLOR_DIRECT
+                    sourceX,
+                    sourceY,
+                    target.targetMidX,
+                    target.targetMidY,
+                    color
                 );
-            } else {
-                let evened = numTargets - remainder;
-                let half = (evened / 2);
-
-                let sourceX = sourceInfo.sourceMidX;
-                let sourceY = sourceInfo.sourceBottomY;
-
-                let left = sourceX - (sourceInfo.source.width/2);
-                let right = sourceX + (sourceInfo.source.width/2);
-
-                let padding = sourceInfo.source.width * EdgeRenderer.Config().PADDING.PADDING_BETWEEN_EDGES;
-                sourceX -= (padding * half);
-
-                sourceInfo.targets.sort((a, b) => {
-                    return a.targetMidX - b.targetMidX;
-                });
-
-                for (let i = 0; i < half; i++) {
-                    let target = sourceInfo.targets[i];
-                    drawLine(
-                        sourceInfo.source,
-                        target,
-
-                        sourceX, 
-                        sourceY, 
-                        target.targetMidX, 
-                        target.targetMidY, 
-                        EdgeRenderer.Config().COLORS.COLOR_TRUE
-                    );
-                    sourceX += padding;
-                }
-
-                sourceX = sourceInfo.sourceMidX;
-                if (remainder == 1) {
-                    let target = sourceInfo.targets[half];
-                    drawLine(
-                        sourceInfo.source,
-                        target,
-                        
-                        sourceX, 
-                        sourceY, 
-                        target.targetMidX, 
-                        target.targetMidY, 
-                        EdgeRenderer.Config().COLORS.COLOR_DIRECT
-                    );
-                }
-                
-                sourceX += (padding * half);
-                for (let i = half; i < numTargets; i++) {
-                    let target = sourceInfo.targets[i];
-                    drawLine(
-                        sourceInfo.source,
-                        target,
-
-                        sourceX, 
-                        sourceY, 
-                        target.targetMidX, 
-                        target.targetMidY, 
-                        EdgeRenderer.Config().COLORS.COLOR_FALSE
-                    );
-                    sourceX -= padding;
-                }
-            }
+                sourceX += sourceInfo.source.width * config.PADDING.PADDING_BETWEEN_EDGES;
+            });
         });
     }
 }
 
 class BoxVertexRenderer extends VertexRenderer {
-    constructor() {
-        super();
+    constructor(camera) {
+        super(camera);
         this.drawingData = [];
     }
 
@@ -457,49 +386,49 @@ class BoxVertexRenderer extends VertexRenderer {
     }
 
     render(ctx, widget) {
+        const config = VertexRenderer.Config();
+        const shadowOffsetX = config.OFFSETS.OFFSET_SHADOW * widget.camera.zoom;
+        const shadowOffsetY = shadowOffsetX; // Assuming symmetric shadow offsets
+
         this.drawingData.forEach((vertex) => {
-            { // (* draw the box for the vertex *)
-                // (* set the shadow properties *)
+            const isSelected = vertex.vertex.selected;
+            const shadowColor = isSelected ? config.COLORS.COLOR_SHADOW_SELECTED : config.COLORS.COLOR_SHADOW;
+            const borderColor = isSelected ? config.COLORS.COLOR_BORDER_SELECTED : config.COLORS.COLOR_BORDER;
+            const borderSize = config.SIZES.SIZE_BORDER;
+            const vertexWidth = vertex.metrics.vertex.width;
+            const vertexHeight = vertex.metrics.vertex.height;
 
-                ctx.shadowBlur = VertexRenderer.Config().SIZES.SIZE_SHADOW_BLUR;
-                ctx.shadowColor = vertex.vertex.selected ? 
-                    VertexRenderer.Config().COLORS.COLOR_SHADOW_SELECTED : VertexRenderer.Config().COLORS.COLOR_SHADOW;
-                ctx.shadowOffsetX = (VertexRenderer.Config().OFFSETS.OFFSET_SHADOW) * widget.camera.zoom;
-                ctx.shadowOffsetY = (VertexRenderer.Config().OFFSETS.OFFSET_SHADOW) * widget.camera.zoom;
-                ctx.shadowBlur = VertexRenderer.Config().SIZES.SIZE_SHADOW;
+            // Set shadow properties
+            ctx.shadowBlur = config.SIZES.SIZE_SHADOW_BLUR;
+            ctx.shadowColor = shadowColor;
+            ctx.shadowOffsetX = shadowOffsetX;
+            ctx.shadowOffsetY = shadowOffsetY;
+            ctx.shadowBlur = config.SIZES.SIZE_SHADOW;
 
-                // (* draw the border of the vertex *)
-                ctx.fillStyle = vertex.vertex.selected ? 
-                    VertexRenderer.Config().COLORS.COLOR_BORDER_SELECTED : VertexRenderer.Config().COLORS.COLOR_BORDER;
-                ctx.fillRect(
-                    vertex.x - VertexRenderer.Config().SIZES.SIZE_BORDER, 
-                    vertex.y - VertexRenderer.Config().SIZES.SIZE_BORDER, 
-                    vertex.metrics.vertex.width + (VertexRenderer.Config().SIZES.SIZE_BORDER*2), 
-                    vertex.metrics.vertex.height + (VertexRenderer.Config().SIZES.SIZE_BORDER*2)
-                );
+            // Draw the border of the vertex
+            ctx.fillStyle = borderColor;
+            ctx.fillRect(
+                vertex.x - borderSize, 
+                vertex.y - borderSize, 
+                vertexWidth + (borderSize * 2), 
+                vertexHeight + (borderSize * 2)
+            );
 
-                // (* set the shadow color to transparent *)
-                ctx.shadowColor = "transparent";
+            // Set the shadow color to transparent for the background
+            ctx.shadowColor = "transparent";
 
-                // (* draw the background of the vertex *)
-                ctx.fillStyle = VertexRenderer.Config().COLORS.COLOR_BACKGROUND;
-                ctx.fillRect(vertex.x, vertex.y, vertex.metrics.vertex.width, vertex.metrics.vertex.height);
-            }
+            // Draw the background of the vertex
+            ctx.fillStyle = config.COLORS.COLOR_BACKGROUND;
+            ctx.fillRect(vertex.x, vertex.y, vertexWidth, vertexHeight);
 
-            { // (* draw the text for the vertex *)
-                // (* set the font properties *)
-                ctx.font = VertexRenderer.Config().SIZES.SIZE_TEXT 
-                    + "px " 
-                    + VertexRenderer.Config().FONTS.FONT_CONTENT;
-                
-                // (* draw each line of text *)
-                vertex.lines.forEach((line) => {
-                    line.content.forEach((text) => {
-                        ctx.fillStyle = text[0];
-                        ctx.fillText(text[1], text[2], line.y);
-                    });
+            // Draw the text for the vertex
+            ctx.font = `${config.SIZES.SIZE_TEXT}px ${config.FONTS.FONT_CONTENT}`;
+            vertex.lines.forEach((line) => {
+                line.content.forEach((text) => {
+                    ctx.fillStyle = text[0];
+                    ctx.fillText(text[1], text[2], line.y);
                 });
-            }
+            });
         });
     }
 }

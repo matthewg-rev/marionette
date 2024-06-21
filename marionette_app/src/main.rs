@@ -8,16 +8,12 @@ mod plugin;
 
 use std::fs;
 use std::env;
+use serde_json::{json, Value};
 use futures::{executor, FutureExt};
 use dioxus::{html::p, prelude::*};
 use dioxus::desktop::{Config, WindowBuilder};
 
-use crate::{
-    welcome::Welcome,
-    selector_service::OpenTab,
-    tool::Tool,
-    page_not_found::NotFound,
-};
+use crate::{welcome::Welcome, selector_service::OpenTab, tool::Tool, page_not_found::NotFound};
 
 #[derive(Clone, Routable)]
 pub enum Route {
@@ -34,6 +30,30 @@ pub enum Route {
     NotFound {},
 }
 
+fn dispatch(method: String, data: String) -> Result<String, String> {
+    let mut result = "".to_string();
+
+    result = match method.as_str() {
+        "lint" => {
+            // TODO: create linter
+            "".to_string()
+        }
+        _ => format!("Error, no method found: {}", method)
+    };
+
+    Ok(result)
+}
+
+fn respond(response: Value, eval: UseEval) {
+    if eval.send(response.to_string().into()).is_ok() { 
+        return;
+    }
+    
+    println!("Error sending message: {:?}", response.to_string());
+    println!("User interface is likely frozen or disconnected, exiting...");
+    std::process::exit(1);
+}
+
 fn main() {
     let launcher = LaunchBuilder::new().with_cfg(
         Config::default().with_menu(None).with_window(
@@ -44,10 +64,42 @@ fn main() {
 
 #[component]
 fn portal() -> Element {
-    let future = use_resource(move || async move {
-        let mut evaluator = eval(include_str!("resources/scripts/interop_connector.js"));
-        let res = evaluator.await;
-        res
+    let task = use_future(move || {
+        let mut eval = eval(include_str!("resources/scripts/interop_connector.js"));
+
+        async move {
+            loop {
+                to_owned![eval];
+                if let Ok(message) = eval.recv().await {
+                    let mut response = json!({
+                        "status": "ok",
+                        "data": ""
+                    });
+
+                    if let Some(message) = message.as_object() {
+                        if message.contains_key("method") && message.contains_key("data") {
+                            let res = dispatch(
+                                message["method"].as_str().unwrap().to_string(), 
+                                message["data"].as_str().unwrap().to_string()
+                            );
+
+                            if let Ok(res) = res {
+                                response["data"] = res.clone().into();
+                                respond(response, eval);
+                            } else {
+                                response["status"] = "err".into();
+                                response["data"] = res.clone().err().unwrap().into();
+                                respond(response, eval);
+                            }
+                        }
+                    } else {
+                        response["status"] = "err".into();
+                        response["data"] = format!("Error: {}", message).into();
+                        respond(response, eval);
+                    }
+                }
+            }
+        }
     });
 
     let mut plugins_vec = vec![];
@@ -56,25 +108,14 @@ fn portal() -> Element {
     plugin_dir.push("plugins");
     let plugins_dir = fs::read_dir(plugin_dir);
 
-    if plugins_dir.is_ok() {
-        let plugins_dir = plugins_dir.unwrap();
-        for entry in plugins_dir {
-            let entry = entry.unwrap();
+    if let Ok(plugins_dir) = plugins_dir {
+        for entry in plugins_dir.filter_map(Result::ok) {
             let path = entry.path();
-            let extension = path.extension().unwrap_or_default();
-    
-            if extension != "py" {
-                continue;
-            }
-    
-            let path = path.to_str().unwrap();
-            let plugin = plugin::Plugin::new(path);
-            match plugin {
-                Ok(plugin) => { 
-                    let result = plugin.init();
+            if path.extension() == Some(std::ffi::OsStr::new("py")) {
+                if let Ok(plugin) = plugin::Plugin::new(path.to_str().unwrap()) {
+                    plugin.init();
                     plugins_vec.push(plugin);
-                },
-                Err(_) => continue,
+                }
             }
         }
     }
@@ -90,8 +131,5 @@ fn portal() -> Element {
         style { {include_str!("resources/styles/misc/file-icons.min.css")} },
         script { {include_str!("resources/scripts/interop.js")} },
         Router::<Route> { }
-        {
-            future.value();
-        }
     )
 }

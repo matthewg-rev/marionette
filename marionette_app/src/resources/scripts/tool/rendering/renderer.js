@@ -2,7 +2,9 @@ class GraphRenderer {
     static Config() { 
         return RendererConfig.Configs[GraphRenderer];
     }
-    constructor() {}
+    constructor(camera) {
+        this.camera = camera;
+    }
 
     preprocess(ctx, data) {}
     select(ctx, location) {}
@@ -13,7 +15,9 @@ class VertexRenderer {
     static Config() { 
         return RendererConfig.Configs[VertexRenderer]; 
     }
-    constructor() {}
+    constructor(camera) {
+        this.camera = camera;
+    }
 
     preprocess(ctx, data) {}
     metrics(ctx, vertex) {}
@@ -24,7 +28,9 @@ class EdgeRenderer {
     static Config() {
         return RendererConfig.Configs[EdgeRenderer];
     }
-    constructor() {}
+    constructor(camera) {
+        this.camera = camera;
+    }
 
     preprocess(ctx, data) {}
     render(ctx, widget) {}
@@ -34,7 +40,9 @@ class ErrorRenderer {
     static Config() {
         return RendererConfig.Configs[ErrorRenderer];
     }
-    constructor() {}
+    constructor(camera) {
+        this.camera = camera;
+    }
 
     preprocess(ctx, data) {}
     render(ctx, widget) {}
@@ -48,12 +56,12 @@ class RendererConfig {
                 FONT_CONTENT: "Consolas"
             },
             COLORS: {
-                COLOR_BORDER: "#9b9b9b",
-                COLOR_BORDER_SELECTED: "#ffffff",
+                COLOR_BORDER: "#2f2f2f",
+                COLOR_BORDER_SELECTED: "#5f5f5f",
                 COLOR_BACKGROUND: "#0f0f0f",
 
                 COLOR_SHADOW: "#080808",
-                COLOR_SHADOW_SELECTED: "#222222",
+                COLOR_SHADOW_SELECTED: "#191919",
             },
             SIZES: {
                 SIZE_TEXT: 16,

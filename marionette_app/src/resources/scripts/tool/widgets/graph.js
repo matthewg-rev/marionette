@@ -11,9 +11,6 @@ class GraphWidget extends Widget {
 
         this.ctx = this.container.getContext('2d');
 
-        this.renderer = new BoxRenderer();
-        this.graph = Graph.fromJSON(Graph.testJSON());
-
         this.binds['containerMouseClick'] = this.containerMouseClick.bind(this);
         this.binds['containerMouseDown'] = this.containerMouseDown.bind(this);
         this.binds['containerMouseMove'] = this.containerMouseMove.bind(this);
@@ -48,6 +45,9 @@ class GraphWidget extends Widget {
             dragging: {flag: false, start: {x: 0, y: 0}},
             pinching: {start: {distance: null}}
         }
+
+        this.renderer = new BoxRenderer(this.camera);
+        this.graph = Graph.fromJSON(Graph.testJSON());
 
         $(this.container).click(this.binds.containerMouseClick);
 

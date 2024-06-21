@@ -82,7 +82,11 @@ class Widget {
         });
     }
 
+    cleanup() {}
+
     closeClick(e) {
+        this.cleanup();
+        
         for (const child of this.element.children) {
             if (child.id === 'header') continue;
             child.style.transition = 'all 0.5s ease-in-out';

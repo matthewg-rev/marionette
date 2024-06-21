@@ -1,0 +1,134 @@
+:root {
+    --log-font-family: 'JetBrains Mono', monospace;
+    --log-font-size: 12px;
+
+    --log-background-color1: #1a1a1a;
+    --log-background-color2: #111111;
+
+    --log-time-color: #777777;
+    --log-error-color: #d5606a;
+    --log-success-color: #6cd975;
+    --log-info-color: #4e9fcf;
+    --log-default-color: #ffffff;
+
+    --log-col-width: 25%;
+    --log-padding: 5px;
+}
+
+::-webkit-resizer {
+    display: none;
+    pointer-events: none;
+}
+
+::-webkit-scrollbar-corner {
+    display: none;
+    pointer-events: none;
+}
+
+#widget > .log-container {
+    display: flex;
+    flex-direction: column;
+    top: 20px;
+
+    position: absolute;
+
+    width: 100%;
+    height: 100%;
+    background: transparent;
+
+    white-space: nowrap;
+    overflow: auto;
+    overflow: -moz-scrollbars-horizontal;
+
+    resize: none;
+    scrollbar-color: var(--editor-active-line-number-color) var(--editor-background-color);
+}
+
+#widget > .bottom-bar {
+    display: flex;
+    flex-direction: row;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 22px;
+    z-index: 0;
+    background: #1e1e1e;
+    color: #ffffff;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 0 5px;
+    box-sizing: border-box;
+    user-select: none;
+    visibility: hidden;
+}
+
+#widget > .log-container > .log:nth-child(even) {
+    background-color: var(--log-background-color2);
+}
+
+#widget > .log-container > .log:nth-child(odd) {
+    background-color: var(--log-background-color1);
+}
+
+#widget > .log-container > .log {
+    display: flex;
+    flex-direction: row;
+
+    font-family: var(--log-font-family);
+    font-size: var(--log-font-size);
+}
+
+#widget > .log-container > .log > .log-time {
+    color: var(--log-time-color);
+    padding-left: var(--log-padding);
+    padding-right: var(--log-padding);
+    
+    text-align: left;
+    user-select: text;
+
+    width: var(--log-col-width);
+}
+
+#widget > .log-container > .log > .log-type {
+    padding-right: var(--log-padding);
+    
+    text-align: left;
+    user-select: text;
+
+    width: var(--log-col-width);
+}
+
+#widget > .log-container > .log > .log-detail {
+    padding-right: var(--log-padding);
+    
+    text-align: left;
+    user-select: text;
+
+    width: var(--log-col-width);
+}
+
+#widget > .log-container > .log > .log-message {
+    padding-right: var(--log-padding);
+
+    text-align: left;
+    user-select: text;
+    overflow-x: hidden;
+
+    width: var(--log-col-width);
+}
+
+#widget > .log-container > .log > .log-error {
+    color: var(--log-error-color);
+}
+
+#widget > .log-container > .log > .log-success {
+    color: var(--log-success-color);
+}
+
+#widget > .log-container > .log > .log-info {
+    color: var(--log-info-color);
+}
+
+#widget > .log-container > .log > .log-default {
+    color: var(--log-default-color);
+}
