@@ -32,10 +32,12 @@ class Canvas {
         this.widgets.forEach(w => w.flags.focused = false);
         widget.flags.focused = true;
         
-        const indexes = this.widgets.map(w => w.element.style.zIndex).filter(z => z > widget.element.style.zIndex);
+        const indexes = this.widgets.map(w => parseInt(w.element.style.zIndex)).filter(z => z > parseInt(widget.element.style.zIndex));
         indexes.forEach(z => {
-            const w = this.widgets.find(w => w.element.style.zIndex === z);
-            w.element.style.zIndex = z - 1;
+            const w = this.widgets.find(w => parseInt(w.element.style.zIndex) === z);
+            if (z > 0) {
+                w.element.style.zIndex = z - 1;
+            }
         });
 
         widget.element.style.zIndex = this.widgets.length;

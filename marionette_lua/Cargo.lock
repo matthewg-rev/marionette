@@ -169,6 +169,7 @@ name = "marionette_core"
 version = "0.1.0"
 dependencies = [
  "libloading",
+ "logos",
  "rand",
  "rustc_version",
  "serde",

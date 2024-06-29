@@ -10,7 +10,7 @@ window.internalRequest = async function(method, data, no_response = false, avoid
 
     let response = await window.dioxus.recv();
     if (!avoid_log) window.received(response);
-    return response;
+    return JSON.parse(response);
 }
 
 // THE CODE BELOW IS 100% GOING TO BE OVERRIDEN

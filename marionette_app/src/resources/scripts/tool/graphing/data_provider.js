@@ -24,7 +24,7 @@ class DebugDataProvider extends DataProvider {
 
             // Increment the fake address
             this.fakeAddress++;
-            const addressColor = "#3FAAB5";
+            const addressColor = "#4EF196";
             // add fakeAddress to the line as hex
             line.add(`${this.fakeAddress.toString(16).padStart(4, '0')}\t`, addressColor);
 
@@ -36,7 +36,7 @@ class DebugDataProvider extends DataProvider {
             line.add(`${word}\t`, instructionColor);
 
             // Define a consistent color for random numbers
-            const randomColor = "#3FAAB5";
+            const randomColor = "#4EF196";
 
             // Add three segments of random numbers to the line, sometimes adding a fourth
             line.add(`${Math.floor(Math.random() * 100)}\t`, randomColor);

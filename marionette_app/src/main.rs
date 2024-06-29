@@ -11,6 +11,7 @@ use std::env;
 use serde_json::{json, Value};
 use futures::{executor, FutureExt};
 use dioxus::{html::p, prelude::*};
+use marionette_core::general_lexer::GeneralLexer;
 use dioxus::desktop::{Config, WindowBuilder};
 
 use crate::{welcome::Welcome, selector_service::OpenTab, tool::Tool, page_not_found::NotFound};
@@ -30,13 +31,20 @@ pub enum Route {
     NotFound {},
 }
 
-fn dispatch(method: String, data: String) -> Result<String, String> {
+fn dispatch(method: String, data: Value) -> Result<String, String> {
     let mut result = "".to_string();
 
     result = match method.as_str() {
-        "lint" => {
-            // TODO: create linter
-            "".to_string()
+        "lex" => {
+            let content = data["text"].as_str().unwrap().to_string();
+
+            println!("Linting: {}", data);
+            let result = GeneralLexer::lex(content);
+            if result.is_err() {
+                return Err(result.err().unwrap().to_string());
+            }
+
+            result.unwrap().to_string()
         }
         _ => format!("Error, no method found: {}", method)
     };
@@ -80,7 +88,7 @@ fn portal() -> Element {
                         if message.contains_key("method") && message.contains_key("data") {
                             let res = dispatch(
                                 message["method"].as_str().unwrap().to_string(), 
-                                message["data"].as_str().unwrap().to_string()
+                                Value::Object(message["data"].as_object().unwrap().clone())
                             );
 
                             if let Ok(res) = res {

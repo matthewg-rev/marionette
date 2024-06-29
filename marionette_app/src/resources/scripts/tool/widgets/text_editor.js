@@ -6,102 +6,196 @@ class TextEditorWidget extends Widget {
     constructor(title, width, height) {
         super(title, width, height);
 
-        this.bottom = this.element.appendChild(document.createElement('div'));
-        this.bottom.classList.add('bottom-bar');
-
-        this.editor = this.element.appendChild(document.createElement('div'));
-        this.editor.classList.add('text-editor');
-        this.editor.style.width = '100%';
-        this.editor.style.height = 'calc(100% - 42px)';
-        this.editor.setAttribute('spellcheck', 'false');
-        this.editor.setAttribute('autocomplete', 'off');
-        this.editor.setAttribute('autocorrect', 'off');
-        this.editor.setAttribute('autocapitalize', 'off');
-
-        this.margin = this.editor.appendChild(document.createElement('div'));
-        this.margin.classList.add('margin');
-
-        this.text = this.editor.appendChild(document.createElement('textarea'));
-        this.text.classList.add('text-area');
-
-        this.text.addEventListener('input', () => {
-            this.lines = this.text.value.split('\n');
-
-            // NOTE: this might cause problems if we don't keep track of up to date requests
-            // i.e. performance issues, but it's fine for now?
-            let linterData = window.internalRequest('lint', this.text.value, false, false);
-
-            this.refresh();
-            this.selectCurrentLine();
+        this.bottom = this.createElementWithClass('div', 'bottom-bar', this.element);
+        this.editor = this.createElementWithClass('div', 'text-editor', this.element, {
+            width: '100%',
+            height: 'calc(100% - 42px)',
+        }, {
+            spellcheck: 'false',
+            autocomplete: 'off',
+            autocorrect: 'off',
+            autocapitalize: 'off'
         });
 
-        this.text.addEventListener('keydown', (e) => {
-            if (e.keyCode === 9) {
-                // tab insertion
-                e.preventDefault();
+        this.margin = this.createElementWithClass('div', 'margin', this.editor);
+        this.container = this.createElementWithClass('div', 'container', this.editor);
+        this.backdrop = this.createElementWithClass('div', 'backdrop', this.container);
+        this.hilayer = this.createElementWithClass('div', 'hilayer', this.backdrop);
+        this.text = this.createElementWithClass('textarea', 'text-area', this.container);
 
-                let cursorPosition = $(this.text).prop('selectionStart');
-                let start = this.text.value.substr(0, cursorPosition);
-                let end = this.text.value.substr(cursorPosition);
-
-                this.text.value = start + '\t' + end;
-
-                this.lines = this.text.value.split('\n');
-                this.refresh();
-                this.selectCurrentLine();
-
-                this.text.setSelectionRange(cursorPosition + 1, cursorPosition + 1);
-            }
-
-            // for some reason, the cursor position is not updated when the keydown event is fired
-            // so we need to wait a bit before selecting the current line
-            this.selectCurrentLine();
-        });
-
-        let margin = this.margin;
-        $(this.text).scroll(function() {
-            margin.scrollTop = this.scrollTop;
+        this.current_linter_data = null;
+        this.current_linter_text = null;
+        this.current_linter_edits = null;
+        
+        $(this.text).on({
+            'scroll': () => this.syncScrollPositions(),
+            'input': () => this.onInput(),
+            'keydown': (e) => this.keyDown(e)
         });
 
         $(this.text).click(this.selectCurrentLine.bind(this));
 
         this.onExpand['editor'] = () => {
-            this.editor.style.visibility = this.flags.expanded ? 'visible' : 'hidden';
-            this.bottom.style.visibility = this.flags.expanded ? 'visible' : 'hidden';
+            const visibility = this.flags.expanded ? 'visible' : 'hidden';
+            this.editor.style.visibility = visibility;
+            this.bottom.style.visibility = visibility;
             if (this.flags.expanded) {
                 this.lines = this.text.value.split('\n');
                 this.refresh();
                 this.selectCurrentLine();
             }
+        };
+    }
+
+    createElementWithClass(tag, className, parent, styles = {}, attributes = {}) {
+        const element = document.createElement(tag);
+        element.classList.add(className);
+        Object.assign(element.style, styles);
+        
+        for (const [key, value] of Object.entries(attributes)) {
+            element.setAttribute(key, value);
         }
+
+        parent.appendChild(element);
+        return element;
+    }
+
+    keyDown(e) {
+        //this.syncScrollPositions()
+        //this.refresh();
+
+        if (e.key === 'Tab') {
+            // tab insertion
+            e.preventDefault();
+
+            const cursorPosition = this.text.selectionStart;
+            const start = this.text.value.substring(0, cursorPosition);
+            const end = this.text.value.substring(cursorPosition);
+
+            this.text.value = start + '\t' + end;
+            this.text.setSelectionRange(cursorPosition + 1, cursorPosition + 1);
+            this.onInput();
+        }
+    }
+
+    async onInput() {
+        this.syncScrollPositions()
+        this.lines = this.text.value.split('\n');
+
+        try {
+            let lintedText = this.text.value;
+            let linterData = await window.internalRequest('lex', {"text": lintedText}, false, true);
+            this.current_linter_data = linterData["data"];
+            this.current_linter_text = lintedText;
+            this.doLinting();
+        } catch (error) {
+            console.error("Error processing linter data:", error);
+        }
+
+        this.refresh();
+        this.selectCurrentLine();
+    }
+
+    setReadOnly(readOnly) {
+        this.text.readOnly = readOnly;
+    }
+
+    syncScrollPositions() {
+        this.margin.scrollTop = this.text.scrollTop;
+        this.backdrop.scrollTop = this.text.scrollTop;
+        this.hilayer.scrollTop = this.text.scrollTop;
+
+        this.backdrop.scrollLeft = this.text.scrollLeft;
+        this.hilayer.scrollLeft = this.text.scrollLeft;
+    }
+
+    doLinting() {
+        // TODO: fix this solution as it's awfully slow since we have to wait for dioxus to return linting results.
+        if (this.current_linter_text === null || this.current_linter_data === null) {
+            return;
+        }
+
+        let lintedText = this.current_linter_text;
+        let json = JSON.parse(this.current_linter_data);
+        let edits = [];
+
+        for (let i = 0; i < json.length; i++) {
+            let tok = json[i];
+            let slice = tok["slice"];
+            let span = tok["span"];
+            let start = span["start"];
+            let end = span["end"];
+            let token = tok["token"];
+
+            let editContent = token === "NewLine" ? `</div><div class='line'>` : `<span class='${token.toLowerCase()}'>${slice}</span>`;
+
+            edits.push({
+                start: start,
+                end: end,
+                edit: editContent,
+                token: token
+            });
+        }
+
+        edits.sort((a, b) => a.start - b.start);
+        
+        let lineAppendage = `<div class='line'>`;
+        let addedCharacters = 0;
+        lintedText = lineAppendage + lintedText;
+        addedCharacters += lineAppendage.length;
+
+        edits.forEach((edit) => {
+            lintedText = lintedText.slice(0, edit.start + addedCharacters) + edit.edit + lintedText.slice(edit.end + addedCharacters);
+            addedCharacters += edit.edit.length - (edit.end - edit.start);
+        });
+        lintedText = lintedText + `</div>`;
+
+        this.hilayer.innerHTML = lintedText;
     }
 
     selectCurrentLine() {
+        this.syncScrollPositions()
+        
         setTimeout(() => {
-            let cursorPosition = $(this.text).prop('selectionStart');
-            let line = $(this.text).val().substr(0, cursorPosition).split('\n').length;
-    
-            $('.line-number').removeClass('active-line-number');
-            this.margin.childNodes[line - 1].childNodes[0].classList.add('active-line-number');
-            let scrollTop = $(this.text).scrollTop();
-            this.margin.scrollTop = scrollTop;
-        }, 10);
+            const cursorPosition = this.text.selectionStart;
+            const lines = this.text.value.substr(0, cursorPosition).split('\n');
+            const currentLineIndex = lines.length - 1;
+
+            // remove active class from all line numbers
+            this.margin.querySelectorAll('.line-number').forEach(lineNumber => {
+                lineNumber.classList.remove('active-line-number');
+            });
+
+            // add active class to the current line number
+            const currentLineNumber = this.margin.childNodes[currentLineIndex]?.childNodes[0];
+            if (currentLineNumber) {
+                currentLineNumber.classList.add('active-line-number');
+            }
+        }, 0);
     }
 
     refresh() {
-        if (this.margin.children.length < this.lines.length) {
-            for (let i = this.margin.children.length; i < this.lines.length; i++) {
-                const lineMargin = this.margin.appendChild(document.createElement('div'));
-                lineMargin.classList.add('line-margin');
+        const fragment = document.createDocumentFragment();
 
-                const lineNumber = lineMargin.appendChild(document.createElement('div'));
-                lineNumber.classList.add('line-number');
-                lineNumber.innerText = i + 1;
-            }
-        } else if (this.margin.children.length > this.lines.length) {
-            for (let i = this.margin.children.length; i > this.lines.length; i--) {
-                this.margin.removeChild(this.margin.lastChild);
-            }
+        // add missing lines
+        for (let i = this.margin.children.length; i < this.lines.length; i++) {
+            const lineMargin = document.createElement('div');
+            lineMargin.classList.add('line-margin');
+
+            const lineNumber = document.createElement('div');
+            lineNumber.classList.add('line-number');
+            lineNumber.innerText = i + 1;
+
+            lineMargin.appendChild(lineNumber);
+            fragment.appendChild(lineMargin);
         }
+
+        // remove extra lines
+        while (this.margin.children.length > this.lines.length) {
+            this.margin.removeChild(this.margin.lastChild);
+        }
+
+        // append new lines in a single operation
+        this.margin.appendChild(fragment);
     }
 }

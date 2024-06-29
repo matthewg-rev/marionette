@@ -1,6 +1,7 @@
 // Purpose: main library file for the disassembler
 // src\lib.rs
 
+pub mod general_lexer;
 pub mod byte_stream;
 pub mod mproj;
 
