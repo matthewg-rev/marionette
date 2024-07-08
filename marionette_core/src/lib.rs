@@ -1,7 +1,10 @@
 // Purpose: main library file for the disassembler
 // src\lib.rs
 
+pub mod lexer_service;
+pub mod python_lexer;
 pub mod general_lexer;
+
 pub mod byte_stream;
 pub mod mproj;
 

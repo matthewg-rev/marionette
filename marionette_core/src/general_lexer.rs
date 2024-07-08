@@ -9,6 +9,12 @@ enum GeneralToken {
     #[regex(r"(;.+)", priority = 1)]
     Comment,
 
+    #[regex(r"\$KW1\{(.+)\}", priority = 1)]
+    Keyword1,
+
+    #[regex(r"\$KW2\{(.+)\}", priority = 1)]
+    Keyword2,
+
     #[regex(r"0x[0-9a-fA-F]+", priority = 1)]
     Address,
 
@@ -25,6 +31,8 @@ impl ToString for GeneralToken {
             GeneralToken::NewLine => "NewLine".to_string(),
 
             GeneralToken::Comment => "Comment".to_string(),
+            GeneralToken::Keyword1 => "Keyword1".to_string(),
+            GeneralToken::Keyword2 => "Keyword2".to_string(),
             GeneralToken::Address => "Address".to_string(),
             GeneralToken::Number => "Number".to_string(),
             GeneralToken::Text => "Text".to_string(),

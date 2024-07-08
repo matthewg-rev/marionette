@@ -8,6 +8,7 @@ mod plugin;
 
 use std::fs;
 use std::env;
+use marionette_core::lexer_service::LexerService;
 use serde_json::{json, Value};
 use futures::{executor, FutureExt};
 use dioxus::{html::p, prelude::*};
@@ -37,9 +38,10 @@ fn dispatch(method: String, data: Value) -> Result<String, String> {
     result = match method.as_str() {
         "lex" => {
             let content = data["text"].as_str().unwrap().to_string();
+            let lexer_choice = data["lexer"].as_str().unwrap().to_string();
 
             println!("Linting: {}", data);
-            let result = GeneralLexer::lex(content);
+            let result = LexerService::lex(content, lexer_choice);
             if result.is_err() {
                 return Err(result.err().unwrap().to_string());
             }

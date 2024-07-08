@@ -13,9 +13,13 @@
     --editor-active-line-number-color: #606060;
     --editor-line-number-color: #292929;
 
+    --editor-string-color: #4EF196;
     --editor-number-color: #4EF196;
     --editor-comment-color: #606060;
     --editor-address-color: #4EF196;
+    --editor-operator-color: #979088;
+    --editor-keyword1-color: #F99ED4;
+    --editor-keyword2-color: #63D4F5;
 
     --editor-caret-color: #bbbbbb;
     --editor-tab-size: 4;
@@ -66,6 +70,9 @@
 #widget > .text-editor > .container {
     position: relative;
     margin: 0;
+
+    width: 100%;
+    height: 100%;
 }
 
 #widget > .text-editor > .container > .backdrop {
@@ -103,9 +110,24 @@
 
 #widget > .text-editor > .container > .backdrop > .hilayer > .line {
     width: 100%;
-    height: var(--editor-line-height);
+    min-height: var(--editor-line-height);
+    max-height: fit-content;
+    tab-size: var(--editor-tab-size);
 
     text-wrap: nowrap;
+}
+
+#widget > .text-editor > .container > .backdrop > .hilayer > .line:last-child {
+    padding-bottom: 20px;
+}
+
+
+#widget > .text-editor > .container > .backdrop > .hilayer > .line > .boolean {
+    color: var(--editor-string-color);
+}
+
+#widget > .text-editor > .container > .backdrop > .hilayer > .line > .string {
+    color: var(--editor-string-color);
 }
 
 #widget > .text-editor > .container > .backdrop > .hilayer > .line > .number {
@@ -118,6 +140,18 @@
 
 #widget > .text-editor > .container > .backdrop > .hilayer > .line > .comment {
     color: var(--editor-comment-color);
+}
+
+#widget > .text-editor > .container > .backdrop > .hilayer > .line > .operator {
+    color: var(--editor-operator-color);
+}
+
+#widget > .text-editor > .container > .backdrop > .hilayer > .line > .keyword1 {
+    color: var(--editor-keyword1-color);
+}
+
+#widget > .text-editor > .container > .backdrop > .hilayer > .line > .keyword2 {
+    color: var(--editor-keyword2-color);
 }
 
 #widget > .text-editor > .container > .text-area {
@@ -136,6 +170,7 @@
 
     margin: 0;
     line-height: var(--editor-line-height);
+    tab-size: var(--editor-tab-size);
     border-radius: 0;
 
     text-wrap: nowrap;

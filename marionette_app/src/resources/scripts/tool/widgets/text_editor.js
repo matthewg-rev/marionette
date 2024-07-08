@@ -23,9 +23,11 @@ class TextEditorWidget extends Widget {
         this.hilayer = this.createElementWithClass('div', 'hilayer', this.backdrop);
         this.text = this.createElementWithClass('textarea', 'text-area', this.container);
 
-        this.current_linter_data = null;
-        this.current_linter_text = null;
-        this.current_linter_edits = null;
+        this.current_linter_data = {
+            "lines": [],
+            "current_line": 0,
+            "text": ""
+        };
         
         $(this.text).on({
             'scroll': () => this.syncScrollPositions(),
@@ -82,11 +84,23 @@ class TextEditorWidget extends Widget {
         this.syncScrollPositions()
         this.lines = this.text.value.split('\n');
 
+        const cursorPosition = this.text.selectionStart;
+        const lines = this.text.value.substr(0, cursorPosition).split('\n');
+        const currentLineIndex = lines.length - 1;
+        this.current_linter_data["current_line"] = currentLineIndex;
+
         try {
-            let lintedText = this.text.value;
-            let linterData = await window.internalRequest('lex', {"text": lintedText}, false, true);
+            /*let lintedText = this.text.value;
+            let linterData = await window.internalRequest('lex', {"lexer":"python", "text": lintedText}, false, true);
             this.current_linter_data = linterData["data"];
             this.current_linter_text = lintedText;
+            this.doLinting();*/
+            
+            let textToLint = this.text.value;
+            let linterData = await window.internalRequest('lex', {"lexer":"python", "text": textToLint}, false, true);
+            this.current_linter_data["lines"] = JSON.parse(linterData["data"]);
+            this.current_linter_data["text"] = this.text.value;
+
             this.doLinting();
         } catch (error) {
             console.error("Error processing linter data:", error);
@@ -111,16 +125,11 @@ class TextEditorWidget extends Widget {
 
     doLinting() {
         // TODO: fix this solution as it's awfully slow since we have to wait for dioxus to return linting results.
-        if (this.current_linter_text === null || this.current_linter_data === null) {
-            return;
-        }
-
-        let lintedText = this.current_linter_text;
-        let json = JSON.parse(this.current_linter_data);
+        let lintedText = this.current_linter_data["text"];
         let edits = [];
 
-        for (let i = 0; i < json.length; i++) {
-            let tok = json[i];
+        for (let i = 0; i < this.current_linter_data["lines"].length; i++) {
+            let tok = this.current_linter_data["lines"][i];
             let slice = tok["slice"];
             let span = tok["span"];
             let start = span["start"];
@@ -128,7 +137,6 @@ class TextEditorWidget extends Widget {
             let token = tok["token"];
 
             let editContent = token === "NewLine" ? `</div><div class='line'>` : `<span class='${token.toLowerCase()}'>${slice}</span>`;
-
             edits.push({
                 start: start,
                 end: end,
