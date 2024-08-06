@@ -6,8 +6,7 @@ enum LuaToken {
     #[regex(r"\n", priority = 1)]
     NewLine,
 
-    #[regex(r"--\[=*\[.*\]=*\]", priority = 1)]
-    #[regex(r"--.*", priority = 2)]
+    #[regex(r"--\[", lua_comment)]
     Comment,
 
     #[token("function")]
@@ -46,6 +45,15 @@ enum LuaToken {
 
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*")]
     Identifier,
+}
+
+#[derive(Logos)]
+enum LuaComment {
+
+}
+
+fn lua_comment(lexer: &mut logos::Lexer<'_, LuaToken>) -> Result<(), ()> {
+    
 }
 
 impl ToString for LuaToken {
