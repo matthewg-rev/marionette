@@ -3,6 +3,7 @@
 
 pub mod lexer_service;
 pub mod python_lexer;
+pub mod lua_lexer;
 pub mod general_lexer;
 
 pub mod byte_stream;

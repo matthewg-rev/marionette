@@ -1,6 +1,7 @@
 use serde_json::json;
 use crate::general_lexer::GeneralLexer;
 use crate::python_lexer::PythonLexer;
+use crate::lua_lexer::LuaLexer;
 
 pub struct LexerService {}
 
@@ -14,6 +15,12 @@ impl LexerService {
             return Ok(tokens.unwrap());
         } else if lexer == "python" {
             let tokens = PythonLexer::lex(code);
+            if tokens.is_err() {
+                return Err(tokens.err().unwrap().to_string());
+            }
+            return Ok(tokens.unwrap());
+        } else if lexer == "lua" {
+            let tokens = LuaLexer::lex(code);
             if tokens.is_err() {
                 return Err(tokens.err().unwrap().to_string());
             }

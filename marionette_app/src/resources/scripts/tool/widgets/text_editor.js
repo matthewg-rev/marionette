@@ -24,9 +24,13 @@ class TextEditorWidget extends Widget {
         this.text = this.createElementWithClass('textarea', 'text-area', this.container);
 
         this.current_linter_data = {
-            "lines": [],
+            "linter_lines": [],
             "current_line": 0,
-            "text": ""
+            "curr_text": "",
+            "prev_text": "",
+
+            "raw_curr_lines": [""],
+            "raw_prev_lines": []
         };
         
         $(this.text).on({
@@ -81,8 +85,16 @@ class TextEditorWidget extends Widget {
     }
 
     async onInput() {
-        this.syncScrollPositions()
-        this.lines = this.text.value.split('\n');
+        this.current_linter_data["prev_text"] = this.current_linter_data["curr_text"];
+        this.current_linter_data["curr_text"] = this.text.value;
+
+        let textToLint = this.current_linter_data["curr_text"];
+        let prevText = this.current_linter_data["prev_text"];
+
+        this.current_linter_data["raw_curr_lines"] = textToLint.split('\n');
+        this.current_linter_data["raw_prev_lines"] = prevText.split('\n');
+
+        this.syncScrollPositions();
 
         const cursorPosition = this.text.selectionStart;
         const lines = this.text.value.substr(0, cursorPosition).split('\n');
@@ -90,16 +102,8 @@ class TextEditorWidget extends Widget {
         this.current_linter_data["current_line"] = currentLineIndex;
 
         try {
-            /*let lintedText = this.text.value;
-            let linterData = await window.internalRequest('lex', {"lexer":"python", "text": lintedText}, false, true);
-            this.current_linter_data = linterData["data"];
-            this.current_linter_text = lintedText;
-            this.doLinting();*/
-            
-            let textToLint = this.text.value;
-            let linterData = await window.internalRequest('lex', {"lexer":"python", "text": textToLint}, false, true);
-            this.current_linter_data["lines"] = JSON.parse(linterData["data"]);
-            this.current_linter_data["text"] = this.text.value;
+            let linterData = await window.internalRequest('lex', {"lexer":"lua", "text": textToLint}, false, true);
+            this.current_linter_data["linter_lines"] = JSON.parse(linterData["data"]);
 
             this.doLinting();
         } catch (error) {
@@ -125,11 +129,12 @@ class TextEditorWidget extends Widget {
 
     doLinting() {
         // TODO: fix this solution as it's awfully slow since we have to wait for dioxus to return linting results.
-        let lintedText = this.current_linter_data["text"];
+        let lintedText = this.current_linter_data["curr_text"];
         let edits = [];
 
-        for (let i = 0; i < this.current_linter_data["lines"].length; i++) {
-            let tok = this.current_linter_data["lines"][i];
+        for (let i = 0; i < this.current_linter_data["linter_lines"].length; i++) {
+            let tok = this.current_linter_data["linter_lines"][i];
+            console.log(tok);
             let slice = tok["slice"];
             let span = tok["span"];
             let start = span["start"];
@@ -184,9 +189,10 @@ class TextEditorWidget extends Widget {
 
     refresh() {
         const fragment = document.createDocumentFragment();
+        const lines = this.current_linter_data["raw_curr_lines"];
 
         // add missing lines
-        for (let i = this.margin.children.length; i < this.lines.length; i++) {
+        for (let i = this.margin.children.length; i < lines.length; i++) {
             const lineMargin = document.createElement('div');
             lineMargin.classList.add('line-margin');
 
@@ -199,7 +205,7 @@ class TextEditorWidget extends Widget {
         }
 
         // remove extra lines
-        while (this.margin.children.length > this.lines.length) {
+        while (this.margin.children.length > lines.length) {
             this.margin.removeChild(this.margin.lastChild);
         }
 
