@@ -6,7 +6,7 @@ enum LuaToken {
     #[regex(r"\n", priority = 1)]
     NewLine,
 
-    #[regex(r"--\[", lua_comment)]
+    #[regex(r"--", lua_comment, priority = 1)]
     Comment,
 
     #[token("function")]
@@ -41,19 +41,133 @@ enum LuaToken {
 
     #[regex(r#""([^"\\]|\\["\\bnfrt]|u[a-fA-F0-9]{4})*""#)]
     #[regex(r"'[^']*'")]
+    #[regex(r"\[=*\[", lua_string)]
     String,
 
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*")]
     Identifier,
 }
 
-#[derive(Logos)]
-enum LuaComment {
-
+#[derive(Logos, Debug, PartialEq)]
+enum LuaMultiLineString {
+    #[token("[", priority = 10)]
+    Open,
+    #[token("]", priority = 10)]
+    Close,
+    #[token("=", priority = 10)]
+    Equals,
+    #[regex(".")]
+    Content
 }
 
-fn lua_comment(lexer: &mut logos::Lexer<'_, LuaToken>) -> Result<(), ()> {
-    
+fn lua_string(lex: &mut logos::Lexer<LuaToken>) -> Result<(), ()> {
+    let remainder = lex.remainder();
+    let mut chars = remainder.chars().peekable();
+    let mut eq_count = 0;
+
+    // get currently matched data
+    let mut data = lex.slice().to_string();
+    eq_count = data.len() - 2; // remove opening brackets from length
+
+    println!("remainder: {:?}", remainder);
+
+    // define the closing sequence
+    let closing_sequence = format!("]{}]", "=".repeat(eq_count));
+
+    // push characters into content until closing sequence is found
+    let mut content = String::new();
+    while let Some(c) = chars.next() {
+        content.push(c);
+        if content.ends_with(&closing_sequence) {
+            break;
+        }
+    }
+
+    // check closing sequence
+    if !content.ends_with(&closing_sequence) {
+        return Err(());
+    }
+
+    // bump the lexer
+    let comment_len = remainder.len() - chars.collect::<String>().len();
+    lex.bump(comment_len);
+
+    return Ok(());
+}
+
+#[derive(Logos, Debug, PartialEq)]
+enum LuaComment {
+    #[token("[", priority = 10)]
+    Open,
+    #[token("]", priority = 10)]
+    Close,
+    #[token("=", priority = 10)]
+    Equals,
+    #[regex(".")]
+    Content
+}
+
+fn lua_comment(lex: &mut logos::Lexer<LuaToken>) -> Result<(), ()> {
+    let remainder = lex.remainder();
+    let mut chars = remainder.chars().peekable();
+    let mut multi_line = false;
+
+    if chars.peek() == Some(&'[') {
+        chars.next();
+        multi_line = true;
+    }
+
+    println!("remainder: {:?} | multi_line: {:?}", remainder, multi_line);
+
+    if multi_line {
+        // count the number of equals signs
+        let mut eq_count = 0;
+        while let Some('=') = chars.peek() {
+            chars.next();
+            eq_count += 1;
+        }
+
+        // make sure the enter bracket is there
+        if chars.next() != Some('[') {
+            return Err(());
+        }
+
+        // define the closing sequence
+        let closing_sequence = format!("]{}]", "=".repeat(eq_count));
+
+        // push characters into content until closing sequence is found
+        let mut content = String::new();
+        while let Some(c) = chars.next() {
+            content.push(c);
+            if content.ends_with(&closing_sequence) {
+                break;
+            }
+        }
+
+        // check closing sequence
+        if !content.ends_with(&closing_sequence) {
+            return Err(());
+        }
+
+        // bump the lexer
+        let comment_len = remainder.len() - chars.collect::<String>().len();
+        lex.bump(comment_len);
+
+        return Ok(());
+    }
+
+    // Single-line comment
+    while let Some(c) = chars.peek() {
+        if c == &'\n' {
+            break;
+        }
+        chars.next();
+    }
+
+    let comment_len = remainder.len() - chars.collect::<String>().len();
+    lex.bump(comment_len);
+
+    return Ok(())
 }
 
 impl ToString for LuaToken {

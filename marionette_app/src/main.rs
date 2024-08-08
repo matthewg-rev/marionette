@@ -40,7 +40,6 @@ fn dispatch(method: String, data: Value) -> Result<String, String> {
             let content = data["text"].as_str().unwrap().to_string();
             let lexer_choice = data["lexer"].as_str().unwrap().to_string();
 
-            println!("Linting: {}", data);
             let result = LexerService::lex(content, lexer_choice);
             if result.is_err() {
                 return Err(result.err().unwrap().to_string());
