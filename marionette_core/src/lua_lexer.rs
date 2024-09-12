@@ -63,11 +63,10 @@ enum LuaMultiLineString {
 fn lua_string(lex: &mut logos::Lexer<LuaToken>) -> Result<(), ()> {
     let remainder = lex.remainder();
     let mut chars = remainder.chars().peekable();
-    let mut eq_count = 0;
 
     // get currently matched data
-    let mut data = lex.slice().to_string();
-    eq_count = data.len() - 2; // remove opening brackets from length
+    let data = lex.slice().to_string();
+    let eq_count = data.len() - 2; // remove opening brackets from length
 
     println!("remainder: {:?}", remainder);
 

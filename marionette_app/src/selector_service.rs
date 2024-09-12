@@ -226,7 +226,7 @@ pub fn GoDownButtonSvg() -> Element {
             polygon {
                 id: "svg-data",
                 points: "14,16 24,6 25.4,7.4 16.8,16 25.4,24.6 24,26 "
-            },
+            }
 
             rect {
                 id: "svg-data",
@@ -250,7 +250,7 @@ pub fn GoUpButtonSvg() -> Element {
             polygon {
                 id: "svg-data",
                 points: "18,16 8,26 6.6,24.6 15.2,16 6.6,7.4 8,6 "
-            },
+            }
 
             rect {
                 id: "svg-data",
@@ -274,7 +274,7 @@ pub fn RefreshButtonSvg() -> Element {
             path {
                 id: "svg-data",
                 d: "M12,10H6.78A11,11,0,0,1,27,16h2A13,13,0,0,0,6,7.68V4H4v8h8Z"
-            },
+            }
 
             path {
                 id: "svg-data",
@@ -310,9 +310,9 @@ pub fn ExplorerFolder(props: ExplorerFolderProps) -> Element {
                     color: {props.icon_info.2.clone()};
                     {props.icon_info.4.clone()}"#,
                 {props.icon_info.1.clone()}
-            },
-            span { { props.folder_name.clone() } },
-            span { { props.folder_size.clone() } },
+            }
+            span { { props.folder_name.clone() } }
+            span { { props.folder_size.clone() } }
             span { { props.date_modified.clone() } }
         }
     }
@@ -364,9 +364,9 @@ pub fn ExplorerFile(props: ExplorerFileProps) -> Element {
                     color: {props.icon_info.2.clone()};
                     {props.icon_info.4.clone()}"#,
                 {props.icon_info.1.clone()}
-            },
-            span { { props.file_name.clone() } },
-            span { { props.file_size.clone() } },
+            }
+            span { { props.file_name.clone() } }
+            span { { props.file_size.clone() } }
             span { { props.date_modified.clone() } }
         }
     }
@@ -408,7 +408,7 @@ pub fn explorer_container() -> Element {
                         refresh_file_explorer(window.clone(), selector_state.clone());
                     }
                 }
-            },
+            }
 
             FileExplorerButton {
                 onclick: move |_| {
@@ -416,7 +416,7 @@ pub fn explorer_container() -> Element {
                     selector_state.explorer_state.go_up();
                 },
                 GoDownButtonSvg {}
-            },
+            }
 
             FileExplorerButton {
                 onclick: move |_| {
@@ -424,7 +424,7 @@ pub fn explorer_container() -> Element {
                     selector_state.explorer_state.go_back();
                 },
                 GoUpButtonSvg {}
-            },
+            }
 
             FileExplorerButton {
                 onclick: move |_| {
@@ -433,7 +433,7 @@ pub fn explorer_container() -> Element {
                 },
                 RefreshButtonSvg {}
             }
-        },
+        }
 
         div {
             class: "file_explorer_container",
@@ -491,13 +491,13 @@ pub fn bottom_bar_container() -> Element {
                     let mut selector_state = selector_state.write();
                     selector_state.selected_path = evt.value().clone();
                 }
-            },
+            }
             BottomBarButton {
                 text: "Cancel",
                 onclick: move |_| {
                     navigator.push(crate::Route::Welcome {});
                 }
-            },
+            }
             BottomBarButton {
                 text: "Analyze",
                 onclick: move |_| {
@@ -527,12 +527,12 @@ pub fn header_container() -> Element {
     rsx! {
         div {
             class: "header",
-            HeaderTabButton { text: "Analysis Selector", tab: 0 },
+            HeaderTabButton { text: "Analysis Selector", tab: 0 }
 
             div {
                 id: "tab_container",
-                HeaderTabButton { text: "Projects", tab: 1 },
-                HeaderTabButton { text: "Files", tab: 2 },
+                HeaderTabButton { text: "Projects", tab: 1 }
+                HeaderTabButton { text: "Files", tab: 2 }
             }
         }
     }
@@ -547,7 +547,7 @@ pub fn OpenTab(tab: usize) -> Element {
 
     rsx! {
         style { {include_str!("resources/styles/analysis-selector/analysis-selector.css")} }
-        header_container {},
+        header_container {}
         {
             match tab {
                 1 => rsx!( projects_container {} ),
@@ -558,7 +558,7 @@ pub fn OpenTab(tab: usize) -> Element {
                     }
                 }
             }
-        },
+        }
         bottom_bar_container {}
     }
 }

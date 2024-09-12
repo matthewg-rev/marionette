@@ -8,14 +8,25 @@ mod plugin;
 
 use std::fs;
 use std::env;
+use dioxus::desktop::tao::platform::windows::WindowBuilderExtWindows;
 use marionette_core::lexer_service::LexerService;
 use serde_json::{json, Value};
 use futures::{executor, FutureExt};
-use dioxus::{html::p, prelude::*};
+use dioxus::{
+    html::p, prelude::*
+};
 use marionette_core::general_lexer::GeneralLexer;
-use dioxus::desktop::{Config, WindowBuilder};
+use dioxus::desktop::{
+    Config,
+    WindowBuilder
+};
 
-use crate::{welcome::Welcome, selector_service::OpenTab, tool::Tool, page_not_found::NotFound};
+use crate::{
+    welcome::Welcome, 
+    selector_service::OpenTab, 
+    tool::Tool, 
+    page_not_found::NotFound
+};
 
 #[derive(Clone, Routable)]
 pub enum Route {
@@ -64,18 +75,21 @@ fn respond(response: Value, eval: UseEval) {
 }
 
 fn main() {
-    let launcher = LaunchBuilder::new().with_cfg(
-        Config::default().with_menu(None).with_window(
-            WindowBuilder::new().with_always_on_top(false).with_resizable(false).with_title("Marionette")
-        )
-    ).launch(portal);
+    let windowBuilder = WindowBuilder::new()
+        .with_always_on_top(false)
+        .with_resizable(false)
+        .with_title("Marionette");
+
+    let config = dioxus::desktop::Config::new().with_window(windowBuilder).with_menu(None);
+    let launcher = LaunchBuilder::new().with_cfg(config);
+    launcher.launch(portal);
 }
 
 #[component]
 fn portal() -> Element {
+    let mut eval = eval(include_str!("resources/scripts/interop_connector.js"));
+    
     let task = use_future(move || {
-        let mut eval = eval(include_str!("resources/scripts/interop_connector.js"));
-
         async move {
             loop {
                 to_owned![eval];
@@ -136,9 +150,9 @@ fn portal() -> Element {
         link {
             rel: "stylesheet",
             href: "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
-        },
-        style { {include_str!("resources/styles/misc/file-icons.min.css")} },
-        script { {include_str!("resources/scripts/interop.js")} },
+        }
+        style { {include_str!("resources/styles/misc/file-icons.min.css")} }
+        script { {include_str!("resources/scripts/interop.js")} }
         Router::<Route> { }
     )
 }

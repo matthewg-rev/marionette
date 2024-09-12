@@ -159,7 +159,7 @@ impl Msg {
                         class: "msgbox_icon",
                         style: format!("color: {}", icon_color(props.icon.clone())),
                         {msg_icon(props.icon.clone())}
-                    },
+                    }
                     span {
                         class: "msgbox_title",
                         {props.title.clone()}
@@ -198,7 +198,7 @@ impl Msg {
                                         let _ = sender.write().to_owned().try_send(MsgResult::Ok);
                                         window.close();
                                     }
-                                },
+                                }
                                 MsgBoxButton {
                                     text: "Cancel",
                                     onclick: move |_| {
@@ -220,7 +220,7 @@ impl Msg {
                                         let _ = sender.write().to_owned().try_send(MsgResult::Yes);
                                         window.close();
                                     }
-                                },
+                                }
                                 MsgBoxButton {
                                     text: "No",
                                     onclick: move |_| {
@@ -242,7 +242,7 @@ impl Msg {
                                         let _ = sender.write().to_owned().try_send(MsgResult::Yes);
                                         window.close();
                                     }
-                                },
+                                }
                                 MsgBoxButton {
                                     text: "No",
                                     onclick: move |_| {
@@ -264,7 +264,7 @@ impl Msg {
                                         let _ = sender.write().to_owned().try_send(MsgResult::Abort);
                                         window.close();
                                     }
-                                },
+                                }
                                 MsgBoxButton {
                                     text: "Retry",
                                     onclick: move |_| {
@@ -273,7 +273,7 @@ impl Msg {
                                         let _ = sender.write().to_owned().try_send(MsgResult::Retry);
                                         window.close();
                                     }
-                                },
+                                }
                                 MsgBoxButton {
                                     text: "Ignore",
                                     onclick: move |_| {
@@ -295,7 +295,7 @@ impl Msg {
                                         let _ = sender.write().to_owned().try_send(MsgResult::Retry);
                                         window.close();
                                     }
-                                },
+                                }
                                 MsgBoxButton {
                                     text: "Cancel",
                                     onclick: move |_| {

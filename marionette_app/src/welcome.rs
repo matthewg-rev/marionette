@@ -118,8 +118,8 @@ pub fn Welcome() -> Element {
     window.set_resizable(false);
     window.set_inner_size(LogicalSize::new(825, 500));
     rsx!(
-        style { {include_str!("resources/styles/welcome/welcome.css")} },
-        script { {include_str!("resources/scripts/welcome.js")} },
+        style { {include_str!("resources/styles/welcome/welcome.css")} }
+        script { {include_str!("resources/scripts/welcome.js")} }
         {html!(
             <h1 id="welcome-message">"Marionette"</h1>
             <p id="descriptor">
@@ -157,7 +157,7 @@ pub fn Welcome() -> Element {
                 }
                 if outdated { latest_commit_element(cx) } else { html!() },
             }*/
-        )},
+        )}
         {html!(
             <p id="version">"Version "{VERSION}""</p>
         )}

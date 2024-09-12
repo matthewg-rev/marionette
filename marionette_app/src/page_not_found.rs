@@ -16,11 +16,11 @@ pub fn random_message() -> String {
 #[component]
 pub fn NotFound() -> Element {
     rsx! {
-        style { {include_str!("resources/styles/page-not-found/page-not-found.css")} },
+        style { {include_str!("resources/styles/page-not-found/page-not-found.css")} }
         h1 {
             id: "page_not_found_message",
             "404"
-        },
+        }
         p {
             id: "pnf_text",
             {random_message()}
