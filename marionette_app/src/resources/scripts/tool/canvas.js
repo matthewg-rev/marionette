@@ -1,6 +1,6 @@
 class Canvas {
     constructor() {
-        this.element = document.getElementsByClassName('canvas')[0];
+        this.element = document.getElementById('tool-canvas')[0];
         this.widgets = [];
         this.grid_size = 20;
     }

@@ -5,6 +5,20 @@ use std::rc::Rc;
 use crate::states::selector::SelectorState;
 
 #[derive(Clone, PartialEq, Props)]
+pub struct ToolCanvasProps {
+
+}
+
+pub fn ToolCanvas(props: ToolCanvasProps) -> Element {
+    rsx! {
+        div {
+            id: "tool-canvas",
+            class: "canvas"
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Props)]
 pub struct ToolbarProps {
     pub children: Element,
 }
@@ -160,8 +174,6 @@ pub fn Tool() -> Element {
             }
         }
 
-        div {
-            class: "canvas"
-        }
+        ToolCanvas {}
     }
 }
