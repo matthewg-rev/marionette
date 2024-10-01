@@ -68,8 +68,6 @@ fn lua_string(lex: &mut logos::Lexer<LuaToken>) -> Result<(), ()> {
     let data = lex.slice().to_string();
     let eq_count = data.len() - 2; // remove opening brackets from length
 
-    println!("remainder: {:?}", remainder);
-
     // define the closing sequence
     let closing_sequence = format!("]{}]", "=".repeat(eq_count));
 
@@ -115,8 +113,6 @@ fn lua_comment(lex: &mut logos::Lexer<LuaToken>) -> Result<(), ()> {
         chars.next();
         multi_line = true;
     }
-
-    println!("remainder: {:?} | multi_line: {:?}", remainder, multi_line);
 
     if multi_line {
         // count the number of equals signs

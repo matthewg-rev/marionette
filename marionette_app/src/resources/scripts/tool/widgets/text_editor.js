@@ -21,16 +21,15 @@ class TextEditorWidget extends Widget {
         this.container = this.createElementWithClass('div', 'container', this.editor);
         this.backdrop = this.createElementWithClass('div', 'backdrop', this.container);
         this.hilayer = this.createElementWithClass('div', 'hilayer', this.backdrop);
+        this.hilayer.appendChild(document.createElement('div')).classList.add('line');
         this.text = this.createElementWithClass('textarea', 'text-area', this.container);
 
         this.current_linter_data = {
-            "linter_lines": [],
             "current_line": 0,
             "curr_text": "",
             "prev_text": "",
 
-            "raw_curr_lines": [""],
-            "raw_prev_lines": []
+            "raw_curr_lines": [""]
         };
         
         $(this.text).on({
@@ -84,34 +83,102 @@ class TextEditorWidget extends Widget {
         }
     }
 
+    changedLines(strA, strB) {
+        const linesA = strA.split('\n');
+        const linesB = strB.split('\n');
+        const changes = [];
+
+        const maxLength = Math.max(linesA.length, linesB.length);
+
+        for (let i = 0; i < maxLength; i++) {
+            if (linesA[i] !== linesB[i]) {
+                if (linesA[i] === undefined) {
+                    changes.push({ line: i + 1, type: 'added', content: linesB[i] });
+                } else if (linesB[i] === undefined) {
+                    changes.push({ line: i + 1, type: 'removed', content: linesA[i] });
+                } else {
+                    changes.push({ line: i + 1, type: 'changed', content: linesB[i] });
+                }
+            }
+        }
+
+        return changes;
+    }
+
     async onInput() {
-        this.current_linter_data["prev_text"] = this.current_linter_data["curr_text"];
+        let prevText = this.current_linter_data["curr_text"];
+        this.current_linter_data["prev_text"] = prevText;
         this.current_linter_data["curr_text"] = this.text.value;
-
         let textToLint = this.current_linter_data["curr_text"];
-        let prevText = this.current_linter_data["prev_text"];
-
         this.current_linter_data["raw_curr_lines"] = textToLint.split('\n');
-        this.current_linter_data["raw_prev_lines"] = prevText.split('\n');
 
         this.syncScrollPositions();
 
-        const cursorPosition = this.text.selectionStart;
-        const lines = this.text.value.substr(0, cursorPosition).split('\n');
-        const currentLineIndex = lines.length - 1;
-        this.current_linter_data["current_line"] = currentLineIndex;
+        let changes = this.changedLines(prevText, textToLint);
 
         try {
-            let linterData = await window.internalRequest('lex', {"lexer":"lua", "text": textToLint}, false, true);
-            this.current_linter_data["linter_lines"] = JSON.parse(linterData["data"]);
-
-            this.doLinting();
+            await this.updateText(changes);
+            //let linterData = await window.internalRequest('lex', {"lexer":"lua", "text": toLint}, false, true);
+            //this.lint(JSON.parse(linterData["data"]));
         } catch (error) {
             console.error("Error processing linter data:", error);
         }
 
         this.refresh();
         this.selectCurrentLine();
+    }
+
+    async lintLine(lineContent) {
+        var data = await window.internalRequest('lex', {"lexer":"lua", "text": lineContent}, false, true);
+        data = JSON.parse(data["data"]);
+        console.log(data);
+
+        let edits = [];
+        for (let i = 0; i < data.length; i++) {
+            let tok = data[i];
+            let slice = tok["slice"];
+            let span = tok["span"];
+            let start = span["start"];
+            let end = span["end"];
+            let token = tok["token"];
+
+            let editContent = `<span class='${token.toLowerCase()}'>${slice}</span>`;
+            edits.push({
+                start: start,
+                end: end,
+                edit: editContent,
+                token: token
+            });
+        }
+        //edits.sort((a, b) => a.start - b.start);
+
+        let addedCharacters = 0;
+        edits.forEach((edit) => {
+            lineContent = lineContent.slice(0, edit.start + addedCharacters) + edit.edit + lineContent.slice(edit.end + addedCharacters);
+            addedCharacters += edit.edit.length - (edit.end - edit.start);
+        });
+
+        return lineContent;
+    }
+
+    updateText(data) {
+        var lines = this.hilayer.getElementsByClassName('line');
+        var lineRemovalCount = 0;
+        data.forEach(async (line) => {
+            if (line.type == 'added') {
+                let lineElement = document.createElement('div');
+                lineElement.classList.add('line');
+                lineElement.innerHTML = await this.lintLine(line.content);
+                this.hilayer.appendChild(lineElement);
+            } else if (line.type == 'removed') {
+                this.hilayer.removeChild(lines[line.line - (1 + lineRemovalCount)]);
+                lineRemovalCount++;
+            } else if (line.type == 'changed') {
+                let lineElement = lines[line.line - 1];
+                lineElement.innerHTML = await this.lintLine(line.content);
+            }
+        })
+        this.refresh();
     }
 
     setReadOnly(readOnly) {
@@ -125,45 +192,6 @@ class TextEditorWidget extends Widget {
 
         this.backdrop.scrollLeft = this.text.scrollLeft;
         this.hilayer.scrollLeft = this.text.scrollLeft;
-    }
-
-    doLinting() {
-        // TODO: fix this solution as it's awfully slow since we have to wait for dioxus to return linting results.
-        let lintedText = this.current_linter_data["curr_text"];
-        let edits = [];
-
-        for (let i = 0; i < this.current_linter_data["linter_lines"].length; i++) {
-            let tok = this.current_linter_data["linter_lines"][i];
-            console.log(tok);
-            let slice = tok["slice"];
-            let span = tok["span"];
-            let start = span["start"];
-            let end = span["end"];
-            let token = tok["token"];
-
-            let editContent = token === "NewLine" ? `</div><div class='line'>` : `<span class='${token.toLowerCase()}'>${slice}</span>`;
-            edits.push({
-                start: start,
-                end: end,
-                edit: editContent,
-                token: token
-            });
-        }
-
-        edits.sort((a, b) => a.start - b.start);
-        
-        let lineAppendage = `<div class='line'>`;
-        let addedCharacters = 0;
-        lintedText = lineAppendage + lintedText;
-        addedCharacters += lineAppendage.length;
-
-        edits.forEach((edit) => {
-            lintedText = lintedText.slice(0, edit.start + addedCharacters) + edit.edit + lintedText.slice(edit.end + addedCharacters);
-            addedCharacters += edit.edit.length - (edit.end - edit.start);
-        });
-        lintedText = lintedText + `</div>`;
-
-        this.hilayer.innerHTML = lintedText;
     }
 
     selectCurrentLine() {
@@ -189,10 +217,10 @@ class TextEditorWidget extends Widget {
 
     refresh() {
         const fragment = document.createDocumentFragment();
-        const lines = this.current_linter_data["raw_curr_lines"];
+        const lines = this.hilayer.getElementsByClassName('line').length;
 
         // add missing lines
-        for (let i = this.margin.children.length; i < lines.length; i++) {
+        for (let i = this.margin.children.length; i < lines; i++) {
             const lineMargin = document.createElement('div');
             lineMargin.classList.add('line-margin');
 
@@ -205,7 +233,7 @@ class TextEditorWidget extends Widget {
         }
 
         // remove extra lines
-        while (this.margin.children.length > lines.length) {
+        while (this.margin.children.length > lines) {
             this.margin.removeChild(this.margin.lastChild);
         }
 

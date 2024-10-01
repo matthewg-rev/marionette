@@ -1,16 +1,16 @@
-//toolbar = new Toolbar(document.getElementById('toolbar'));
+toolbar = new Toolbar(document.getElementById('toolbar'));
 ToolCanvas = new Canvas();
 
-/*file = new ToolbarCategory('File');
+file = new ToolbarCategory('File');
 {
     file.components.push(new ToolbarTool('Exit', function() {
         window.close();
     }));
-}*/
+}
 
-//widgets = new ToolbarCategory('Widgets');
+widgets = new ToolbarCategory('Widgets');
 {
-    /*{
+    {
         analysis = new ToolbarCategory('Analysis');
 
         analysis.components.push(new ToolbarTool('Graph View', function() {
@@ -33,9 +33,9 @@ ToolCanvas = new Canvas();
             ToolCanvas.addWidget(new ClockWidget('Clock', 201, 200));
         }));
         widgets.components.push(misc);
-    }*/
+    }
 }
 
-//toolbar.components.push(file);
-//toolbar.components.push(widgets);
-//toolbar.create();
+toolbar.components.push(file);
+toolbar.components.push(widgets);
+toolbar.create();

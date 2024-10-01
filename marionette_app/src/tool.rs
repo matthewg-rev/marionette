@@ -9,80 +9,10 @@ pub struct ToolCanvasProps {
 
 }
 
-pub fn ToolCanvas(props: ToolCanvasProps) -> Element {
+pub fn Toolbar() -> Element {
     rsx! {
         div {
-            id: "tool-canvas",
-            class: "canvas"
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Props)]
-pub struct ToolbarProps {
-    pub children: Element,
-}
-
-pub fn Toolbar(props: ToolbarProps) -> Element {
-    let mut element_info = use_signal(Vec::<(&str, Rc<MountedData>)>::new);
-
-    rsx! {
-        div {
-            id: "toolbar",
-            {props.children}
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Props)]
-pub struct ToolbarCategoryProps {
-    #[props(default=rsx!{})]
-    pub expanded: Element,
-    pub name: String
-}
-
-pub fn ToolbarCategory(props: ToolbarCategoryProps) -> Element {
-    let mut expanded = use_signal(|| false);
-    let mut class_list = use_signal(|| "toolbar-category");
-
-    rsx! {
-        div {
-            class: class_list(),
-            onclick: move |event: MouseEvent| {
-                expanded.toggle();
-                if expanded() {
-                    class_list.set("toolbar-category toolbar-category-selected");
-                } else {
-                    class_list.set("toolbar-category");
-                }
-
-                event.stop_propagation();
-            },
-            
-            if expanded() {
-                div {
-                    class: "toolbar-category-dropdown",
-                    {props.expanded}
-                }
-            }
-            "{props.name}"
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Props)]
-pub struct ToolbarToolProps {
-    pub name: String,
-    #[props(default=Callback::new(|_| {}))]
-    pub onclick: Callback<MouseEvent>,
-}
-
-pub fn ToolbarTool(props: ToolbarToolProps) -> Element {
-    rsx! {
-        div {
-            class: "toolbar-tool",
-            onclick: props.onclick,
-            "{props.name}"
+            id: "toolbar"
         }
     }
 }
@@ -127,53 +57,6 @@ pub fn Tool() -> Element {
         script { {include_str!("resources/scripts/tool/toolbar.js")} }
         script { {include_str!("resources/scripts/tool/tool.js")} }
 
-        Toolbar {
-            ToolbarCategory {
-                name: "File",
-                expanded: rsx! {
-                    ToolbarTool {
-                        name: "Exit",
-                        onclick: |_| {
-                            let window = use_window();
-                            window.close();
-                        }
-                    }
-                }
-            }
-
-            // TODO: Interact with Canvas Widget system
-            ToolbarCategory {
-                name: "Widgets",
-
-                expanded: rsx! { 
-                    ToolbarCategory {
-                        name: "Analysis",
-
-                        expanded: rsx! {
-                            ToolbarTool {
-                                name: "Graph View"
-                            }
-                            ToolbarTool {
-                                name: "Text View"
-                            }
-                            ToolbarTool {
-                                name: "Log View"
-                            }
-                        }
-                    }
-                    ToolbarCategory {
-                        name: "Miscellaneous",
-
-                        expanded: rsx! {
-                            ToolbarTool {
-                                name: "Clock"
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        ToolCanvas {}
+        Toolbar {}
     }
 }
