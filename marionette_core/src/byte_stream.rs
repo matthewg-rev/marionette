@@ -1,6 +1,8 @@
 // Purpose: serve as a byte stream utility for marionette
 // src\byte_stream
 
+use std::collections::VecDeque;
+
 pub mod natives;
 pub mod templated;
 
@@ -56,7 +58,11 @@ pub struct ByteStream {
 
     /// The endianness of the byte stream.
     /// Default is little endian.
-    pub endianness: Endian
+    pub endianness: Endian,
+
+    /// The public context of the byte stream.
+    /// This is used to store values that are necessary for functions using the byte stream.
+    pub context: VecDeque<Box<dyn std::any::Any>>,
 }
 
 pub trait ByteStreamRead: Sized {
@@ -73,7 +79,8 @@ impl From<&ByteStream> for ByteStream {
             bytes: stream.bytes.clone(),
             history: stream.history.clone(),
             index: 0,
-            endianness: stream.endianness.clone()
+            endianness: stream.endianness.clone(),
+            context: VecDeque::new() // context cannot be cloned
         }
     }
 }
@@ -85,7 +92,8 @@ impl ByteStream {
             bytes,
             history: Vec::new(),
             index: 0,
-            endianness: Endian::Little
+            endianness: Endian::Little,
+            context: VecDeque::new()
         }
     }
 
@@ -151,6 +159,23 @@ impl ByteStream {
             self.index = index;
             rollback -= 1;
         }
+    }
+
+    /// Adds an item to the context.
+    pub fn add_context<T: 'static + std::any::Any>(&mut self, item: T) {
+        self.context.push_back(Box::new(item));
+    }
+
+    /// Retrieves the context.
+    pub fn get_context<T: 'static + std::any::Any>(&mut self) -> Vec<&T> {
+        let mut context = Vec::new();
+        for item in &self.context {
+            if let Some(item) = item.downcast_ref::<T>() {
+                context.push(item);
+            }
+        }
+
+        context
     }
 }
 

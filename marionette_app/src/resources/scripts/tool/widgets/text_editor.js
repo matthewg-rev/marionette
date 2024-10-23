@@ -118,8 +118,6 @@ class TextEditorWidget extends Widget {
 
         try {
             await this.updateText(changes);
-            //let linterData = await window.internalRequest('lex', {"lexer":"lua", "text": toLint}, false, true);
-            //this.lint(JSON.parse(linterData["data"]));
         } catch (error) {
             console.error("Error processing linter data:", error);
         }
@@ -131,7 +129,6 @@ class TextEditorWidget extends Widget {
     async lintLine(lineContent) {
         var data = await window.internalRequest('lex', {"lexer":"lua", "text": lineContent}, false, true);
         data = JSON.parse(data["data"]);
-        console.log(data);
 
         let edits = [];
         for (let i = 0; i < data.length; i++) {
@@ -164,6 +161,7 @@ class TextEditorWidget extends Widget {
     updateText(data) {
         var lines = this.hilayer.getElementsByClassName('line');
         var lineRemovalCount = 0;
+
         data.forEach(async (line) => {
             if (line.type == 'added') {
                 let lineElement = document.createElement('div');

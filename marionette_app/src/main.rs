@@ -9,13 +9,12 @@ mod plugin;
 use std::fs;
 use std::env;
 use dioxus::desktop::tao::platform::windows::WindowBuilderExtWindows;
-use marionette_core::lexer_service::LexerService;
+use marionette_util::lexer_service::LexerService;
 use serde_json::{json, Value};
 use futures::{executor, FutureExt};
 use dioxus::{
     html::p, prelude::*
 };
-use marionette_core::general_lexer::GeneralLexer;
 use dioxus::desktop::{
     Config,
     WindowBuilder
@@ -75,12 +74,12 @@ fn respond(response: Value, eval: UseEval) {
 }
 
 fn main() {
-    let windowBuilder = WindowBuilder::new()
+    let window_builder = WindowBuilder::new()
         .with_always_on_top(false)
         .with_resizable(false)
         .with_title("Marionette");
 
-    let config = dioxus::desktop::Config::new().with_window(windowBuilder).with_menu(None);
+    let config = dioxus::desktop::Config::new().with_window(window_builder).with_menu(None);
     let launcher = LaunchBuilder::new().with_cfg(config);
     launcher.launch(portal);
 }

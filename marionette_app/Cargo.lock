@@ -2895,6 +2895,7 @@ dependencies = [
  "futures",
  "futures-channel",
  "marionette_core",
+ "marionette_util",
  "octocrab",
  "open",
  "pyo3",
@@ -2909,9 +2910,18 @@ name = "marionette_core"
 version = "0.1.0"
 dependencies = [
  "libloading",
- "logos",
+ "marionette_util",
  "rand 0.8.5",
  "rustc_version",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "marionette_util"
+version = "0.1.0"
+dependencies = [
+ "logos",
  "serde",
  "serde_json",
 ]

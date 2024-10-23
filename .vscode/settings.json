@@ -3,5 +3,6 @@
         ".\\marionette_app\\Cargo.toml",
         ".\\marionette_core\\Cargo.toml",
         ".\\marionette_lua\\Cargo.toml",
+        ".\\marionette_util\\Cargo.toml"
     ]
 }

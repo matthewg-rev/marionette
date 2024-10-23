@@ -22,6 +22,7 @@ chrono = "0.4.35"
 futures-channel = "0.3.30"
 futures = "0.3.30"
 marionette_core = { path = "../marionette_core" }
+marionette_util = { path = "../marionette_util" }
 
 [dependencies.pyo3]
 version = "0.22.2"

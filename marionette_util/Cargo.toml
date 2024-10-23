@@ -1,0 +1,9 @@
+[package]
+name = "marionette_util"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+logos = "0.14.0"
+serde = "1.0.163"
+serde_json = { version = "1.0.96", features = ["preserve_order"] }
