@@ -1,6 +1,5 @@
-use marionette_core::assembly::Data;
-use std::{collections::{HashMap, HashSet}, fmt::{self, Debug}};
-use petgraph::{dot::{Config, Dot}, graph::{Graph, NodeIndex}, prelude::StableDiGraph, visit::EdgeRef};
+use std::{collections::{HashMap, HashSet}, fmt::{Debug}};
+use petgraph::{graph::NodeIndex, prelude::StableDiGraph, visit::EdgeRef};
 use lazy_static::*;
 use crate::lua_binary::*;
 
@@ -159,8 +158,8 @@ where
 }
 
 
-pub fn get_graph(mut function: LuaFunction) -> Result<(StableDiGraph<Block<LuaInstruction>, ()>, Option<NodeIndex>), String> {
-    let (mut graph, root) = build_control_flow_graph(&function.code, |insn| {
+pub fn get_graph(function: LuaFunction) -> Result<(StableDiGraph<Block<LuaInstruction>, ()>, Option<NodeIndex>), String> {
+    let (graph, root) = build_control_flow_graph(&function.code, |insn| {
         // is_branching
         match insn.opcode {
             LuaOpcode::JMP

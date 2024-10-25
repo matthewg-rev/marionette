@@ -1,6 +1,5 @@
 use lazy_static::*;
 use std::{collections::HashMap, fmt::Debug};
-use std::rc::Rc;
 use marionette_core::{
     assembly::*,
     byte_stream::*
