@@ -1,6 +1,5 @@
 pub mod lua_binary;
 pub mod cfg;
-use marionette_core::byte_stream::{ByteStream, ByteStreamRead, ByteStreamWrite};
 
 #[cfg(test)]
 mod tests {
