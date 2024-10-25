@@ -1,6 +1,6 @@
 use marionette_core::assembly::Data;
-use std::{collections::HashMap, fmt::Debug};
-use petgraph::graph::{Graph, NodeIndex};
+use std::{collections::{HashMap, HashSet}, fmt::{self, Debug}};
+use petgraph::{dot::{Config, Dot}, graph::{Graph, NodeIndex}, prelude::StableDiGraph, visit::EdgeRef};
 use lazy_static::*;
 use crate::lua_binary::*;
 
@@ -34,16 +34,29 @@ lazy_static! {
 }
 
 #[derive(Default)]
-pub struct LuaBlock {
-    pub instructions: Vec<LuaInstruction>,
-    pub start: usize,
-    pub outgoing: Vec<NodeIndex>,
-    pub incoming: Vec<NodeIndex>,
+pub struct Block<T: Debug> {
+    pub id: usize,
+    pub instructions: Vec<T>,
+    pub trivia: Option<Vec<String>>,
 }
 
-impl Debug for LuaBlock {
+impl<T: Debug> Block<T> {
+    pub fn new(id: usize) -> Self {
+        Block {
+            id,
+            instructions: Vec::new(),
+            trivia: None,
+        }
+    }
+
+    pub fn add_instruction(&mut self, instr: T) {
+        self.instructions.push(instr);
+    }
+}
+
+impl<T: Debug> Debug for Block<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "pc: {:?}\n", self.start);
+        write!(f, "id: {:?}\n", self.id);
 
         for instr in &self.instructions {
             write!(f, "{:?}\n", instr);
@@ -53,207 +66,171 @@ impl Debug for LuaBlock {
     }
 }
 
-impl LuaBlock {
-    pub fn new(start: usize) -> LuaBlock {
-        LuaBlock {
-            instructions: Vec::new(),
-            start: start,
-            outgoing: Vec::new(),
-            incoming: Vec::new(),
-        }
-    }
-}
+pub fn build_control_flow_graph<T, F1, F2, F3>(
+    instructions: &Vec<T>,
+    is_branching: F1,
+    branch_targets: F2,
+    is_exiting: F3,
+) -> (StableDiGraph<Block<T>, ()>, Option<NodeIndex>)
+where
+    T: Clone + std::fmt::Debug,
+    F1: Fn(&T) -> bool,
+    F2: Fn(&T) -> Vec<isize>,
+    F3: Fn(&T) -> bool,
+{
 
-pub fn build_skeleton(function: &LuaFunction) -> Result<Graph<LuaBlock, ()>, String> {
-    pub fn try_add_block(graph: &mut Graph<LuaBlock, ()>, start: usize) -> NodeIndex {
-        for node in graph.node_indices() {
-            if graph[node].start == start {
-                return node;
-            }
-        }
-
-        let node = graph.add_node(LuaBlock::new(start));
-        node
+    if instructions.is_empty() {
+        return (StableDiGraph::new(), None);
     }
 
-    let mut skeleton: Graph<LuaBlock, ()> = Graph::new();
-    skeleton.add_node(LuaBlock::new(0));
+    // Step 1: Identify the block boundaries
+    let mut leaders = HashSet::new();
+    leaders.insert(0); // The first instruction always starts a block
 
-    for (i, instruction) in function.code.iter().enumerate() {
-        let opcode = instruction.opcode();
-
-        let is_branching = BRANCHING_OPCODES.contains(opcode);
-        let is_possible_skip = POSSIBLE_SKIP_OPCODES.contains(opcode);
-        let is_returning = RETURNING_OPCODES.contains(opcode);
-
-        if !is_branching && !is_returning { continue; }
-        
-        let is_conditional = CONDITIONAL_OPCODES.contains(opcode);
-        let is_non_conditional_branching = NONCONDITIONAL_BRANCHING_OPCODES.contains(opcode);
-        let is_backwards_conditional = BACKWARDS_CONDITIONAL_OPCODES.contains(opcode);
-
-        if is_conditional || is_non_conditional_branching || is_backwards_conditional {
-            if instruction.jump_target.is_none() {
-                continue;
-            }
-            if instruction.jump_target.unwrap() >= function.code.len() {
-                continue;
-            }
-            try_add_block(&mut skeleton, instruction.jump_target.unwrap());
-
-            if i + 1 >= function.code.len() {
-                continue;
-            }
-            try_add_block(&mut skeleton, i + 1);
-        } else if is_possible_skip {
-            let c = match instruction.instruction {
-                LuaOpcode::ABC(_, _, _, c) => c,
-                _ => 0,
-            };
-
-            if c != 0 {
-                if i + 2 >= function.code.len() {
-                    continue;
+    for (index, instr) in instructions.iter().enumerate() {
+        if is_branching(instr) {
+            let targets = branch_targets(instr);
+            for &target in &targets {
+                let target_index = (index as isize + target) as usize;
+                if target_index < instructions.len() {
+                    leaders.insert(target_index);
                 }
-                try_add_block(&mut skeleton, i + 2);
+            }
+        }
+        if is_exiting(instr) || is_branching(instr) {
+            if index + 1 < instructions.len() {
+                leaders.insert(index + 1);
+            }
+        }
+    }
 
-                if i + 1 >= function.code.len() {
-                    continue;
+    // Convert block_starts to a sorted vector
+    let mut block_boundaries: Vec<usize> = leaders.into_iter().collect();
+    block_boundaries.sort_unstable();
+
+    // Step 2: Create blocks and fill them with instructions
+    let mut graph = StableDiGraph::<Block<T>, ()>::new();
+    let mut instr_index_to_node: HashMap<usize, NodeIndex> = HashMap::new();
+    let mut current_boundary_idx = 0;
+
+    while current_boundary_idx < block_boundaries.len() {
+        let start = block_boundaries[current_boundary_idx];
+        let end = if current_boundary_idx + 1 < block_boundaries.len() {
+            block_boundaries[current_boundary_idx + 1]
+        } else {
+            instructions.len()
+        };
+
+        let mut block = Block::new(start);
+        for index in start..end {
+            block.add_instruction(instructions[index].clone());
+        }
+
+        let node = graph.add_node(block);
+        for index in start..end {
+            instr_index_to_node.insert(index, node);
+        }
+
+        current_boundary_idx += 1;
+    }
+
+    // Step 3: Create edges between blocks based on control flow
+    for (index, instr) in instructions.iter().enumerate() {
+        if is_branching(instr) {
+            let targets = branch_targets(instr);
+            for &target in &targets {
+                let target_index = (index as isize + target) as usize;
+                if let Some(&target_node) = instr_index_to_node.get(&target_index) {
+                    graph.add_edge(instr_index_to_node[&index], target_node, ());
                 }
-                try_add_block(&mut skeleton, i + 1);
             }
-        } else if is_returning {
-            if i + 1 >= function.code.len() {
-                continue;
+        } else {
+            if !is_exiting(instr) {
+                if let Some(&next_node) = instr_index_to_node.get(&(index + 1)) {
+                    if next_node != instr_index_to_node[&index] {
+                        graph.add_edge(instr_index_to_node[&index], next_node, ());
+                    }
+                }
             }
-            try_add_block(&mut skeleton, i + 1);
         }
     }
     
-    Ok(skeleton)
+    (graph, instr_index_to_node.get(&0).cloned())
 }
 
-pub fn fill_skeleton(function: &LuaFunction, mut graph: Graph<LuaBlock, ()>) -> Result<Graph<LuaBlock, ()>, String> {
-    pub fn find_block_by_start(graph: &Graph<LuaBlock, ()>, start: usize) -> Option<NodeIndex> {
-        for node in graph.node_indices() {
-            if graph[node].start == start {
-                return Some(node);
-            }
+
+pub fn get_graph(mut function: LuaFunction) -> Result<(StableDiGraph<Block<LuaInstruction>, ()>, Option<NodeIndex>), String> {
+    let (mut graph, root) = build_control_flow_graph(&function.code, |insn| {
+        // is_branching
+        match insn.opcode {
+            LuaOpcode::JMP
+            | LuaOpcode::FORPREP
+            | LuaOpcode::FORLOOP
+            | LuaOpcode::TEST
+            | LuaOpcode::TESTSET
+            | LuaOpcode::EQ
+            | LuaOpcode::LT
+            | LuaOpcode::LE
+            | LuaOpcode::TFORLOOP
+             => true,
+            | LuaOpcode::LOADBOOL =>
+                match insn.components {
+                    LuaLayout::ABC(_, _, _, c) => c != 0,
+                    _ => false,
+                },
+            _ => false,
         }
-
-        None
-    }
-
-    let mut current = find_block_by_start(&graph, 0);
-    if current.is_none() {
-        return Err("Could not find the root block".to_string());
-    }
-    let mut current = current.unwrap();
-
-    for (i, instruction) in function.code.iter().enumerate() {
-        let possible_block = find_block_by_start(&graph, i);
-        if possible_block.is_some() {
-            current = possible_block.unwrap();
-        }
-        graph[current].instructions.push(instruction.clone());
-    }
-
-    Ok(graph)
-}
-
-pub fn add_edges(function: &LuaFunction, mut graph: Graph<LuaBlock, ()>) -> Result<Graph<LuaBlock, ()>, String> {
-    pub fn find_block_by_start(graph: &Graph<LuaBlock, ()>, start: usize) -> Option<NodeIndex> {
-        graph.node_indices().find(|&node| graph[node].start == start)
-    }
-
-    pub fn try_add_edge(mut edges: &mut Vec<(NodeIndex, NodeIndex)>, from: NodeIndex, to: NodeIndex) {
-        if !edges.contains(&(from, to)) {
-            edges.push((from, to));
-        }
-    }
-
-    let mut edges: Vec<(NodeIndex, NodeIndex)> = Vec::new();
-
-    for current in graph.node_indices() {
-        let last_instruction = match graph[current].instructions.last() {
-            Some(instr) => instr,
-            None => continue,
-        };
-
-        let opcode = last_instruction.opcode();
-        let is_branching = BRANCHING_OPCODES.contains(opcode);
-        let is_possible_skip = POSSIBLE_SKIP_OPCODES.contains(opcode);
-        let is_returning = RETURNING_OPCODES.contains(opcode);
-
-        if !is_branching && !is_returning {
-            if last_instruction.pc + 1 >= function.code.len() as u64 {
-                continue;
-            } else {
-                if let Some(next) = find_block_by_start(&graph, last_instruction.pc as usize + 1) {
-                    try_add_edge(&mut edges, current, next);
+    }, |insn| {
+        // branch_targets
+        match insn.opcode {
+            LuaOpcode::JMP
+            | LuaOpcode::FORPREP => {
+                match insn.components {
+                    LuaLayout::AsBx(_, _, s_bx) => vec![(s_bx + 1).try_into().unwrap_or(0)],
+                    LuaLayout::SBx(_, s_bx) => vec![(s_bx + 1).try_into().unwrap_or(0)],
+                    _ => vec![],
                 }
-            }
-            continue;
-        }
-
-        let is_conditional = CONDITIONAL_OPCODES.contains(opcode);
-        let is_non_conditional_branching = NONCONDITIONAL_BRANCHING_OPCODES.contains(opcode);
-        let is_backwards_conditional = BACKWARDS_CONDITIONAL_OPCODES.contains(opcode);
-
-        if is_conditional || is_backwards_conditional {
-            if let Some(jump_target) = last_instruction.jump_target {
-                if jump_target < function.code.len() {
-                    if let Some(target) = find_block_by_start(&graph, jump_target) {
-                        try_add_edge(&mut edges, current, target);
-                    }
+            },
+            LuaOpcode::FORLOOP => {
+                match insn.components {
+                    LuaLayout::AsBx(_, _, s_bx) => vec![1, (s_bx + 1).try_into().unwrap_or(0)],
+                    _ => vec![],
                 }
-            }
-
-            if last_instruction.pc + 1 < function.code.len() as u64 {
-                if let Some(next) = find_block_by_start(&graph, last_instruction.pc as usize + 1) {
-                    try_add_edge(&mut edges, current, next);
-                }
-            }
-        } else if is_non_conditional_branching {
-            if let Some(jump_target) = last_instruction.jump_target {
-                if jump_target < function.code.len() {
-                    if let Some(target) = find_block_by_start(&graph, jump_target) {
-                        try_add_edge(&mut edges, current, target);
-                    }
-                }
-            }
-        } else if is_possible_skip {
-            if let LuaOpcode::ABC(_, _, _, c) = last_instruction.instruction {
-                if c != 0 {
-                    if last_instruction.pc + 2 < function.code.len() as u64 {
-                        if let Some(target) = find_block_by_start(&graph, last_instruction.pc as usize + 2) {
-                            try_add_edge(&mut edges, current, target);
+            },
+            LuaOpcode::TEST
+            | LuaOpcode::TESTSET
+            | LuaOpcode::EQ
+            | LuaOpcode::LT
+            | LuaOpcode::LE
+            | LuaOpcode::TFORLOOP => vec![1, 2],
+            LuaOpcode::LOADBOOL => {
+                match insn.components {
+                    LuaLayout::ABC(_, _, _, c) => {
+                        if c != 0 {
+                            vec![2]
+                        } else {
+                            vec![]
                         }
-                    }
+                    },
+                    _ => vec![],
                 }
-            }
-        } else if is_returning {
-            if last_instruction.pc + 1 < function.code.len() as u64 {
-                if let Some(next) = find_block_by_start(&graph, last_instruction.pc as usize + 1) {
-                    try_add_edge(&mut edges, current, next);
-                }
-            }
+            },
+            _ => vec![],
         }
-    }
+    }, |insn| {
+        // is_exiting
+        match insn.opcode {
+            LuaOpcode::RETURN
+            | LuaOpcode::TAILCALL => true,
+            _ => false,
+        }
+    });
 
-    graph.extend_with_edges(edges);
-    Ok(graph)
-}
-
-pub fn get_graph(mut function: LuaFunction) -> Result<Graph<LuaBlock, ()>, String> {
-    function.update_targets();
-
-    let mut graph = build_skeleton(&function)?;
-    graph = fill_skeleton(&function, graph)?;
-    graph = add_edges(&function, graph)?;
 
     let dot = petgraph::dot::Dot::new(&graph);
     println!("{:?}", dot);
 
-    Ok(graph)
+    // let formatted_cfg = format_cfg(&graph);
+
+    Ok((graph, root))
 }
