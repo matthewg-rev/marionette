@@ -12,116 +12,60 @@ use marionette_core::{
 // We need to make functions that do this for us, so we don't have to repeat the same code over and over again.
 
 lazy_static! {
-    static ref OPCODE_LAYOUT: HashMap<u8, LuaOpcode> = vec![
-        (0, LuaOpcode::AB(0, 0, 0)),        // OP_MOVE
-        (1, LuaOpcode::ABx(0, 0, 0)),       // OP_LOADK
-        (2, LuaOpcode::ABC(0, 0, 0, 0)),    // OP_LOADBOOL
-        (3, LuaOpcode::AB(0, 0, 0)),        // OP_LOADNIL
-        (4, LuaOpcode::AB(0, 0, 0)),        // OP_GETUPVAL
+    static ref OPCODE_LAYOUT: HashMap<LuaOpcode, LuaLayout> = vec![
+        (LuaOpcode::MOVE, LuaLayout::AB(LuaOpcode::MOVE, 0, 0)),        // OP_MOVE
+        (LuaOpcode::LOADK, LuaLayout::ABx(LuaOpcode::LOADK, 0, 0)),       // OP_LOADK
+        (LuaOpcode::LOADBOOL, LuaLayout::ABC(LuaOpcode::LOADBOOL, 0, 0, 0)),    // OP_LOADBOOL
+        (LuaOpcode::LOADNIL, LuaLayout::AB(LuaOpcode::LOADNIL, 0, 0)),        // OP_LOADNIL
+        (LuaOpcode::GETUPVAL, LuaLayout::AB(LuaOpcode::GETUPVAL, 0, 0)),        // OP_GETUPVAL
 
-        (5, LuaOpcode::ABx(0, 0, 0)),       // OP_GETGLOBAL
-        (6, LuaOpcode::ABC(0, 0, 0, 0)),    // OP_GETTABLE
+        (LuaOpcode::GETGLOBAL, LuaLayout::ABx(LuaOpcode::GETGLOBAL, 0, 0)),       // OP_GETGLOBAL
+        (LuaOpcode::GETTABLE, LuaLayout::ABC(LuaOpcode::GETTABLE, 0, 0, 0)),    // OP_GETTABLE
 
-        (7, LuaOpcode::ABx(0, 0, 0)),       // OP_SETGLOBAL
-        (8, LuaOpcode::AB(0, 0, 0)),        // OP_SETUPVAL
-        (9, LuaOpcode::ABC(0, 0, 0, 0)),    // OP_SETTABLE
+        (LuaOpcode::SETGLOBAL, LuaLayout::ABx(LuaOpcode::SETGLOBAL, 0, 0)),       // OP_SETGLOBAL
+        (LuaOpcode::SETUPVAL, LuaLayout::AB(LuaOpcode::SETUPVAL, 0, 0)),        // OP_SETUPVAL
+        (LuaOpcode::SETTABLE, LuaLayout::ABC(LuaOpcode::SETTABLE, 0, 0, 0)),    // OP_SETTABLE
 
-        (10, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_NEWTABLE
+        (LuaOpcode::NEWTABLE, LuaLayout::ABC(LuaOpcode::NEWTABLE, 0, 0, 0)),   // OP_NEWTABLE
 
-        (11, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_SELF
+        (LuaOpcode::SELF, LuaLayout::ABC(LuaOpcode::SELF, 0, 0, 0)),   // OP_SELF
 
-        (12, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_ADD
-        (13, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_SUB
-        (14, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_MUL
-        (15, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_DIV
-        (16, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_MOD
-        (17, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_POW
-        (18, LuaOpcode::AB(0, 0, 0)),       // OP_UNM
-        (19, LuaOpcode::AB(0, 0, 0)),       // OP_NOT
-        (20, LuaOpcode::AB(0, 0, 0)),       // OP_LEN
+        (LuaOpcode::ADD, LuaLayout::ABC(LuaOpcode::ADD, 0, 0, 0)),   // OP_ADD
+        (LuaOpcode::SUB, LuaLayout::ABC(LuaOpcode::SUB, 0, 0, 0)),   // OP_SUB
+        (LuaOpcode::MUL, LuaLayout::ABC(LuaOpcode::MUL, 0, 0, 0)),   // OP_MUL
+        (LuaOpcode::DIV, LuaLayout::ABC(LuaOpcode::DIV, 0, 0, 0)),   // OP_DIV
+        (LuaOpcode::MOD, LuaLayout::ABC(LuaOpcode::MOD, 0, 0, 0)),   // OP_MOD
+        (LuaOpcode::POW, LuaLayout::ABC(LuaOpcode::POW, 0, 0, 0)),   // OP_POW
+        (LuaOpcode::UNM, LuaLayout::AB(LuaOpcode::UNM, 0, 0)),       // OP_UNM
+        (LuaOpcode::NOT, LuaLayout::AB(LuaOpcode::NOT, 0, 0)),       // OP_NOT
+        (LuaOpcode::LEN, LuaLayout::AB(LuaOpcode::LEN, 0, 0)),       // OP_LEN
 
-        (21, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_CONCAT
+        (LuaOpcode::CONCAT, LuaLayout::ABC(LuaOpcode::CONCAT, 0, 0, 0)),   // OP_CONCAT
 
-        (22, LuaOpcode::SBx(0, 0)),         // OP_JMP
+        (LuaOpcode::JMP, LuaLayout::SBx(LuaOpcode::JMP, 0)),         // OP_JMP
 
-        (23, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_EQ
-        (24, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_LT
-        (25, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_LE
+        (LuaOpcode::EQ, LuaLayout::ABC(LuaOpcode::EQ, 0, 0, 0)),   // OP_EQ
+        (LuaOpcode::LT, LuaLayout::ABC(LuaOpcode::LT, 0, 0, 0)),   // OP_LT
+        (LuaOpcode::LE, LuaLayout::ABC(LuaOpcode::LE, 0, 0, 0)),   // OP_LE
 
-        (26, LuaOpcode::AC(0, 0, 0)),       // OP_TEST
-        (27, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_TESTSET
+        (LuaOpcode::TEST, LuaLayout::AC(LuaOpcode::TEST, 0, 0)),       // OP_TEST
+        (LuaOpcode::TESTSET, LuaLayout::ABC(LuaOpcode::TESTSET, 0, 0, 0)),   // OP_TESTSET
 
-        (28, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_CALL
-        (29, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_TAILCALL
-        (30, LuaOpcode::AB(0, 0, 0)),       // OP_RETURN
+        (LuaOpcode::CALL, LuaLayout::ABC(LuaOpcode::CALL, 0, 0, 0)),   // OP_CALL
+        (LuaOpcode::TAILCALL, LuaLayout::ABC(LuaOpcode::TAILCALL, 0, 0, 0)),   // OP_TAILCALL
+        (LuaOpcode::RETURN, LuaLayout::AB(LuaOpcode::RETURN, 0, 0)),       // OP_RETURN
 
-        (31, LuaOpcode::AsBx(0, 0, 0)),     // OP_FORLOOP
-        (32, LuaOpcode::AsBx(0, 0, 0)),     // OP_FORPREP
+        (LuaOpcode::FORLOOP, LuaLayout::AsBx(LuaOpcode::FORLOOP, 0, 0)),     // OP_FORLOOP
+        (LuaOpcode::FORPREP, LuaLayout::AsBx(LuaOpcode::FORPREP, 0, 0)),     // OP_FORPREP
 
-        (33, LuaOpcode::AC(0, 0, 0)),       // OP_TFORLOOP
+        (LuaOpcode::TFORLOOP, LuaLayout::AC(LuaOpcode::TFORLOOP, 0, 0)),       // OP_TFORLOOP
 
-        (34, LuaOpcode::ABC(0, 0, 0, 0)),   // OP_SETLIST
+        (LuaOpcode::SETLIST, LuaLayout::ABC(LuaOpcode::SETLIST, 0, 0, 0)),   // OP_SETLIST
 
-        (35, LuaOpcode::A(0, 0)),           // OP_CLOSE
-        (36, LuaOpcode::ABx(0, 0, 0)),      // OP_CLOSURE
+        (LuaOpcode::CLOSE, LuaLayout::A(LuaOpcode::CLOSE, 0)),           // OP_CLOSE
+        (LuaOpcode::CLOSURE, LuaLayout::ABx(LuaOpcode::CLOSURE, 0, 0)),      // OP_CLOSURE
 
-        (37, LuaOpcode::AB(0, 0, 0)),       // OP_VARARG
-    ].iter().copied().collect();
-
-    static ref OPCODE_NAMES: HashMap<u8, &'static str> = vec![
-        (0, "MOVE"),
-        (1, "LOADK"),
-        (2, "LOADBOOL"),
-        (3, "LOADNIL"),
-        (4, "GETUPVAL"),
-
-        (5, "GETGLOBAL"),
-        (6, "GETTABLE"),
-
-        (7, "SETGLOBAL"),
-        (8, "SETUPVAL"),
-        (9, "SETTABLE"),
-
-        (10, "NEWTABLE"),
-
-        (11, "SELF"),
-
-        (12, "ADD"),
-        (13, "SUB"),
-        (14, "MUL"),
-        (15, "DIV"),
-        (16, "MOD"),
-        (17, "POW"),
-        (18, "UNM"),
-        (19, "NOT"),
-        (20, "LEN"),
-
-        (21, "CONCAT"),
-
-        (22, "JMP"),
-
-        (23, "EQ"),
-        (24, "LT"),
-        (25, "LE"),
-
-        (26, "TEST"),
-        (27, "TESTSET"),
-
-        (28, "CALL"),
-        (29, "TAILCALL"),
-        (30, "RETURN"),
-
-        (31, "FORLOOP"),
-        (32, "FORPREP"),
-
-        (33, "TFORLOOP"),
-
-        (34, "SETLIST"),
-
-        (35, "CLOSE"),
-        (36, "CLOSURE"),
-
-        (37, "VARARG"),
+        (LuaOpcode::VARARG, LuaLayout::AB(LuaOpcode::VARARG, 0, 0)),       // OP_VARARG
     ].iter().copied().collect();
 }
 
@@ -141,22 +85,262 @@ pub struct LuaHeader {
     pub integral_flag: u8
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
 pub enum LuaOpcode {
+    MOVE = 0,
+    LOADK = 1,
+    LOADBOOL = 2,
+    LOADNIL = 3,
+    GETUPVAL = 4,
+
+    GETGLOBAL = 5,
+    GETTABLE = 6,
+
+    SETGLOBAL = 7,
+    SETUPVAL = 8,
+    SETTABLE = 9,
+
+    NEWTABLE = 10,
+
+    SELF = 11,
+
+    ADD = 12,
+    SUB = 13,
+    MUL = 14,
+    DIV = 15,
+    MOD = 16,
+    POW = 17,
+    UNM = 18,
+    NOT = 19,
+    LEN = 20,
+
+    CONCAT = 21,
+
+    JMP = 22,
+
+    EQ = 23,
+    LT = 24,
+    LE = 25,
+
+    TEST = 26,
+    TESTSET = 27,
+
+    CALL = 28,
+    TAILCALL = 29,
+    RETURN = 30,
+
+    FORLOOP = 31,
+    FORPREP = 32,
+
+    TFORLOOP = 33,
+
+    SETLIST = 34,
+
+    CLOSE = 35,
+    CLOSURE = 36,
+
+    VARARG = 37
+}
+
+impl ToString for LuaOpcode {
+    fn to_string(&self) -> String {
+        match self {
+            LuaOpcode::MOVE => "MOVE",
+            LuaOpcode::LOADK => "LOADK",
+            LuaOpcode::LOADBOOL => "LOADBOOL",
+            LuaOpcode::LOADNIL => "LOADNIL",
+            LuaOpcode::GETUPVAL => "GETUPVAL",
+
+            LuaOpcode::GETGLOBAL => "GETGLOBAL",
+            LuaOpcode::GETTABLE => "GETTABLE",
+
+            LuaOpcode::SETGLOBAL => "SETGLOBAL",
+            LuaOpcode::SETUPVAL => "SETUPVAL",
+            LuaOpcode::SETTABLE => "SETTABLE",
+
+            LuaOpcode::NEWTABLE => "NEWTABLE",
+
+            LuaOpcode::SELF => "SELF",
+
+            LuaOpcode::ADD => "ADD",
+            LuaOpcode::SUB => "SUB",
+            LuaOpcode::MUL => "MUL",
+            LuaOpcode::DIV => "DIV",
+            LuaOpcode::MOD => "MOD",
+            LuaOpcode::POW => "POW",
+            LuaOpcode::UNM => "UNM",
+            LuaOpcode::NOT => "NOT",
+            LuaOpcode::LEN => "LEN",
+
+            LuaOpcode::CONCAT => "CONCAT",
+
+            LuaOpcode::JMP => "JMP",
+
+            LuaOpcode::EQ => "EQ",
+            LuaOpcode::LT => "LT",
+            LuaOpcode::LE => "LE",
+
+            LuaOpcode::TEST => "TEST",
+            LuaOpcode::TESTSET => "TESTSET",
+
+            LuaOpcode::CALL => "CALL",
+            LuaOpcode::TAILCALL => "TAILCALL",
+            LuaOpcode::RETURN => "RETURN",
+
+            LuaOpcode::FORLOOP => "FORLOOP",
+            LuaOpcode::FORPREP => "FORPREP",
+
+            LuaOpcode::TFORLOOP => "TFORLOOP",
+
+            LuaOpcode::SETLIST => "SETLIST",
+
+            LuaOpcode::CLOSE => "CLOSE",
+            LuaOpcode::CLOSURE => "CLOSURE",
+
+            LuaOpcode::VARARG => "VARARG",
+        }.to_string()
+    }
+}
+
+impl TryFrom<String> for LuaOpcode {
+    type Error = ();
+    fn try_from(value: String) -> Result<Self, ()> {
+        match value.as_str() {
+            "MOVE" => Ok(LuaOpcode::MOVE),
+            "LOADK" => Ok(LuaOpcode::LOADK),
+            "LOADBOOL" => Ok(LuaOpcode::LOADBOOL),
+            "LOADNIL" => Ok(LuaOpcode::LOADNIL),
+            "GETUPVAL" => Ok(LuaOpcode::GETUPVAL),
+
+            "GETGLOBAL" => Ok(LuaOpcode::GETGLOBAL),
+            "GETTABLE" => Ok(LuaOpcode::GETTABLE),
+
+            "SETGLOBAL" => Ok(LuaOpcode::SETGLOBAL),
+            "SETUPVAL" => Ok(LuaOpcode::SETUPVAL),
+            "SETTABLE" => Ok(LuaOpcode::SETTABLE),
+
+            "NEWTABLE" => Ok(LuaOpcode::NEWTABLE),
+
+            "SELF" => Ok(LuaOpcode::SELF),
+
+            "ADD" => Ok(LuaOpcode::ADD),
+            "SUB" => Ok(LuaOpcode::SUB),
+            "MUL" => Ok(LuaOpcode::MUL),
+            "DIV" => Ok(LuaOpcode::DIV),
+            "MOD" => Ok(LuaOpcode::MOD),
+            "POW" => Ok(LuaOpcode::POW),
+            "UNM" => Ok(LuaOpcode::UNM),
+            "NOT" => Ok(LuaOpcode::NOT),
+            "LEN" => Ok(LuaOpcode::LEN),
+
+            "CONCAT" => Ok(LuaOpcode::CONCAT),
+
+            "JMP" => Ok(LuaOpcode::JMP),
+
+            "EQ" => Ok(LuaOpcode::EQ),
+            "LT" => Ok(LuaOpcode::LT),
+            "LE" => Ok(LuaOpcode::LE),
+
+            "TEST" => Ok(LuaOpcode::TEST),
+            "TESTSET" => Ok(LuaOpcode::TESTSET),
+
+            "CALL" => Ok(LuaOpcode::CALL),
+            "TAILCALL" => Ok(LuaOpcode::TAILCALL),
+            "RETURN" => Ok(LuaOpcode::RETURN),
+
+            "FORLOOP" => Ok(LuaOpcode::FORLOOP),
+            "FORPREP" => Ok(LuaOpcode::FORPREP),
+
+            "TFORLOOP" => Ok(LuaOpcode::TFORLOOP),
+
+            "SETLIST" => Ok(LuaOpcode::SETLIST),
+
+            "CLOSE" => Ok(LuaOpcode::CLOSE),
+            "CLOSURE" => Ok(LuaOpcode::CLOSURE),
+
+            "VARARG" => Ok(LuaOpcode::VARARG),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<u8> for LuaOpcode {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => LuaOpcode::MOVE,
+            1 => LuaOpcode::LOADK,
+            2 => LuaOpcode::LOADBOOL,
+            3 => LuaOpcode::LOADNIL,
+            4 => LuaOpcode::GETUPVAL,
+
+            5 => LuaOpcode::GETGLOBAL,
+            6 => LuaOpcode::GETTABLE,
+
+            7 => LuaOpcode::SETGLOBAL,
+            8 => LuaOpcode::SETUPVAL,
+            9 => LuaOpcode::SETTABLE,
+
+            10 => LuaOpcode::NEWTABLE,
+
+            11 => LuaOpcode::SELF,
+
+            12 => LuaOpcode::ADD,
+            13 => LuaOpcode::SUB,
+            14 => LuaOpcode::MUL,
+            15 => LuaOpcode::DIV,
+            16 => LuaOpcode::MOD,
+            17 => LuaOpcode::POW,
+            18 => LuaOpcode::UNM,
+            19 => LuaOpcode::NOT,
+            20 => LuaOpcode::LEN,
+
+            21 => LuaOpcode::CONCAT,
+
+            22 => LuaOpcode::JMP,
+
+            23 => LuaOpcode::EQ,
+            24 => LuaOpcode::LT,
+            25 => LuaOpcode::LE,
+
+            26 => LuaOpcode::TEST,
+            27 => LuaOpcode::TESTSET,
+
+            28 => LuaOpcode::CALL,
+            29 => LuaOpcode::TAILCALL,
+            30 => LuaOpcode::RETURN,
+
+            31 => LuaOpcode::FORLOOP,
+            32 => LuaOpcode::FORPREP,
+
+            33 => LuaOpcode::TFORLOOP,
+
+            34 => LuaOpcode::SETLIST,
+
+            35 => LuaOpcode::CLOSE,
+            36 => LuaOpcode::CLOSURE,
+
+            37 => LuaOpcode::VARARG,
+            _ => panic!("unknown opcode: {}", value)
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum LuaLayout {
     // opcode A
-    A(u8, u8),
+    A(LuaOpcode, u8),
     // opcode sBx
-    SBx(u8, i32),
+    SBx(LuaOpcode, i32),
     // opcode A B
-    AB(u8, u8, u16),
+    AB(LuaOpcode, u8, u16),
     // opcode A C
-    AC(u8, u8, u16),
+    AC(LuaOpcode, u8, u16),
     // opcode A Bx
-    ABx(u8, u8, u32),
+    ABx(LuaOpcode, u8, u32),
     // opcode A sBx
-    AsBx(u8, u8, i32),
+    AsBx(LuaOpcode, u8, i32),
     // opcode A B C
-    ABC(u8, u8, u16, u16),
+    ABC(LuaOpcode, u8, u16, u16),
 }
 
 #[derive(PartialEq, Clone)]
@@ -164,50 +348,37 @@ pub struct LuaInstruction {
     pub raw: Vec<u8>,
     pub range: Range,
 
-    pub instruction: LuaOpcode,
+    pub opcode: LuaOpcode,
+    pub components: LuaLayout,
     pub pc: u64,
 
     pub jump_target: Option<usize>,
 }
 
-impl LuaInstruction {
-    pub fn opcode(&self) -> &u8 {
-        match &self.instruction {
-            LuaOpcode::A(op, _) => op,
-            LuaOpcode::SBx(op, _) => op,
-            LuaOpcode::AB(op, _, _) => op,
-            LuaOpcode::AC(op, _, _) => op,
-            LuaOpcode::ABx(op, _, _) => op,
-            LuaOpcode::AsBx(op, _, _) => op,
-            LuaOpcode::ABC(op, _, _, _) => op,
-        }
-    }
-}
-
 impl Debug for LuaInstruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let name = OPCODE_NAMES.get(self.opcode()).unwrap();
+        let name = self.opcode.to_string();
         write!(f, "{} ", self.pc)?;
-        match &self.instruction {
-            LuaOpcode::A(_, a) => {
+        match &self.components {
+            LuaLayout::A(_, a) => {
                 write!(f, "{} {}", name, a)?;
             },
-            LuaOpcode::SBx(_, sbx) => {
+            LuaLayout::SBx(_, sbx) => {
                 write!(f, "{} {} ", name, sbx)?;
             },
-            LuaOpcode::AB(_, a, b) => {
+            LuaLayout::AB(_, a, b) => {
                 write!(f, "{} {} {} ", name, a, b)?;
             },
-            LuaOpcode::AC(_, a, c) => {
+            LuaLayout::AC(_, a, c) => {
                 write!(f, "{} {} {} ", name, a, c)?;
             },
-            LuaOpcode::ABx(_, a, bx) => {
+            LuaLayout::ABx(_, a, bx) => {
                 write!(f, "{} {} {} ", name, a, bx)?;
             },
-            LuaOpcode::AsBx(_, a, sbx) => {
+            LuaLayout::AsBx(_, a, sbx) => {
                 write!(f, "{} {} {} ", name, a, sbx)?;
             },
-            LuaOpcode::ABC(_, a, b, c) => {
+            LuaLayout::ABC(_, a, b, c) => {
                 write!(f, "{} {} {} {} ", name, a, b, c)?;
             },
         }
@@ -301,20 +472,12 @@ impl LuaFunction {
     pub fn update_targets(&mut self) {
         let code_len = self.code.len();
         for (index, instruction) in self.code.iter_mut().enumerate() {
-            let opcode = match instruction.instruction {
-                LuaOpcode::SBx(op, _) => op,
-                LuaOpcode::A(op, _) => op,
-                LuaOpcode::AB(op, _, _) => op,
-                LuaOpcode::AC(op, _, _) => op,
-                LuaOpcode::ABx(op, _, _) => op,
-                LuaOpcode::AsBx(op, _, _) => op,
-                LuaOpcode::ABC(op, _, _, _) => op,
-            };
+            let opcode = instruction.opcode;
 
             match opcode {
-                2 => {
-                    let c = match instruction.instruction {
-                        LuaOpcode::ABC(_, _, _, c) => c,
+                LuaOpcode::LOADBOOL => {
+                    let c = match instruction.components {
+                        LuaLayout::ABC(_, _, _, c) => c,
                         _ => 0
                     };
 
@@ -324,17 +487,17 @@ impl LuaFunction {
 
                     instruction.jump_target = Some(index + 2);
                 },
-                23 | 24 | 25 | 26 | 27 | 33 => {
+                LuaOpcode::EQ | LuaOpcode::LT | LuaOpcode::LE | LuaOpcode::TEST | LuaOpcode::TESTSET | LuaOpcode::TFORLOOP => {
                     if index + 2 >= code_len {
                         continue;
                     }
 
                     instruction.jump_target = Some(index + 2);
                 },
-                22 | 31 | 32 => {
-                    let s_bx = match instruction.instruction {
-                        LuaOpcode::AsBx(_, _, s_bx) => s_bx,
-                        LuaOpcode::SBx(_, s_bx) => s_bx,
+                LuaOpcode::JMP | LuaOpcode::FORLOOP | LuaOpcode::FORPREP => {
+                    let s_bx = match instruction.components {
+                        LuaLayout::AsBx(_, _, s_bx) => s_bx,
+                        LuaLayout::SBx(_, s_bx) => s_bx,
                         _ => 0
                     };
 
@@ -418,7 +581,7 @@ impl ByteStreamRead for LuaHeader {
     }
 }
 
-impl ByteStreamRead for LuaOpcode {
+impl ByteStreamRead for LuaLayout {
     fn read(stream: &mut ByteStream) -> Result<Self, ByteStreamError> {
         let context = stream.get_context();
         let header: &LuaHeader = context[0];
@@ -429,52 +592,52 @@ impl ByteStreamRead for LuaOpcode {
         if stream.is_out_of_bounds(instruction_size as usize) {
             return Err(ByteStreamError::new(
                 stream, 
-                "not enough bytes to read LuaOpcode".to_string(), 
+                "not enough bytes to read LuaLayout".to_string(), 
                 ByteStreamErrorType::OutOfBounds)
             );
         }
 
         let raw = u32::read(stream)?;
-        let opcode = (raw & 0x3F) as u8;
+        let opcode = LuaOpcode::from((raw & 0x3F) as u8);
         let a = ((raw >> 6) & 0xFF) as u8;
 
         match OPCODE_LAYOUT.get(&opcode) {
             Some(layout) => {
                 match layout {
-                    LuaOpcode::A(_, _) => {
-                        return Ok(LuaOpcode::A(opcode, a));
+                    LuaLayout::A(_, _) => {
+                        return Ok(LuaLayout::A(opcode, a));
                     },
-                    LuaOpcode::SBx(_, _) => {
+                    LuaLayout::SBx(_, _) => {
                         let sbx = ((raw >> 14) & 0x3FFFF) as i32 - 131071;
-                        return Ok(LuaOpcode::SBx(opcode, sbx));
+                        return Ok(LuaLayout::SBx(opcode, sbx));
                     },
-                    LuaOpcode::AB(_, _, _) => {
+                    LuaLayout::AB(_, _, _) => {
                         let b = ((raw >> 23) & 0x1FF) as u16;
-                        return Ok(LuaOpcode::AB(opcode, a, b));
+                        return Ok(LuaLayout::AB(opcode, a, b));
                     },
-                    LuaOpcode::AC(_, _, _) => {
+                    LuaLayout::AC(_, _, _) => {
                         let c = ((raw >> 14) & 0x1FF) as u16;
-                        return Ok(LuaOpcode::AC(opcode, a, c));
+                        return Ok(LuaLayout::AC(opcode, a, c));
                     },
-                    LuaOpcode::ABx(_, _, _) => {
+                    LuaLayout::ABx(_, _, _) => {
                         let bx = (raw >> 14) & 0x3FFFF;
-                        return Ok(LuaOpcode::ABx(opcode, a, bx as u32));
+                        return Ok(LuaLayout::ABx(opcode, a, bx as u32));
                     },
-                    LuaOpcode::AsBx(_, _, _) => {
+                    LuaLayout::AsBx(_, _, _) => {
                         let sbx = ((raw >> 14) & 0x3FFFF) as i32 - 131071;
-                        return Ok(LuaOpcode::AsBx(opcode, a, sbx));
+                        return Ok(LuaLayout::AsBx(opcode, a, sbx));
                     },
-                    LuaOpcode::ABC(_, _, _, _) => {
+                    LuaLayout::ABC(_, _, _, _) => {
                         let b = ((raw >> 23) & 0x1FF) as u16;
                         let c = ((raw >> 14) & 0x1FF) as u16;
-                        return Ok(LuaOpcode::ABC(opcode, a, b, c));
+                        return Ok(LuaLayout::ABC(opcode, a, b, c));
                     }
                 }
             },
             None => {
                 return Err(ByteStreamError::new(
                     stream, 
-                    format!("unknown opcode: {}", opcode).to_string(), 
+                    format!("unknown opcode: {}", opcode.to_string()).to_string(), 
                     ByteStreamErrorType::ReadFailure)
                 );
             }
@@ -494,14 +657,25 @@ impl ByteStreamRead for LuaInstruction {
 
         let start = stream.caret();
         let raw = stream.peek(4).unwrap();
-        let instruction = LuaOpcode::read(stream)?;
+        let components = LuaLayout::read(stream)?;
+        let opcode = match components {
+            LuaLayout::A(opcode, _) => opcode,
+            LuaLayout::SBx(opcode, _) => opcode,
+            LuaLayout::AB(opcode, _, _) => opcode,
+            LuaLayout::AC(opcode, _, _) => opcode,
+            LuaLayout::ABx(opcode, _, _) => opcode,
+            LuaLayout::AsBx(opcode, _, _) => opcode,
+            LuaLayout::ABC(opcode, _, _, _) => opcode
+        };
+
         let end = stream.caret();
 
         Ok(LuaInstruction {
             raw: raw,
             range: Range::new(start as u64, end as u64),
 
-            instruction: instruction,
+            opcode: opcode,
+            components: components,
             pc: 0,
 
             jump_target: None
@@ -1021,34 +1195,34 @@ impl ByteStreamWrite for LuaHeader {
     }
 }
 
-impl ByteStreamWrite for LuaOpcode {
+impl ByteStreamWrite for LuaLayout {
     fn write(&self, stream: &mut ByteStream) -> Result<(), ByteStreamError> {
         match self {
-            LuaOpcode::A(opcode, a) => {
+            LuaLayout::A(opcode, a) => {
                 let raw = (((*a as u32) << 6) | (*opcode as u32)).to_le_bytes();
                 stream.write_bytes_slice(&raw)?;
             },
-            LuaOpcode::SBx(opcode, sbx) => {
+            LuaLayout::SBx(opcode, sbx) => {
                 let raw = (((*sbx + 131071) as u32) << 14 | (*opcode as u32)).to_le_bytes();
                 stream.write_bytes_slice(&raw)?;
             },
-            LuaOpcode::AB(opcode, a, b) => {
+            LuaLayout::AB(opcode, a, b) => {
                 let raw = (((*b as u32) << 23) | ((*a as u32) << 6) | (*opcode as u32)).to_le_bytes();
                 stream.write_bytes_slice(&raw)?;
             },
-            LuaOpcode::AC(opcode, a, c) => {
+            LuaLayout::AC(opcode, a, c) => {
                 let raw = (((*c as u32) << 14) | ((*a as u32) << 6) | (*opcode as u32)).to_le_bytes();
                 stream.write_bytes_slice(&raw)?;
             },
-            LuaOpcode::ABx(opcode, a, bx) => {
+            LuaLayout::ABx(opcode, a, bx) => {
                 let raw = ((*bx as u32) << 14 | (*a as u32) << 6 | (*opcode as u32)).to_le_bytes();
                 stream.write_bytes_slice(&raw)?;
             },
-            LuaOpcode::AsBx(opcode, a, sbx) => {
+            LuaLayout::AsBx(opcode, a, sbx) => {
                 let raw = (((*sbx + 131071) as u32) << 14 | (*a as u32) << 6 | (*opcode as u32)).to_le_bytes();
                 stream.write_bytes_slice(&raw)?;
             },
-            LuaOpcode::ABC(opcode, a, b, c) => {
+            LuaLayout::ABC(opcode, a, b, c) => {
                 let raw = (((*c as u32) << 14) | ((*b as u32) << 23) | ((*a as u32) << 6) | (*opcode as u32)).to_le_bytes();
                 stream.write_bytes_slice(&raw)?;
             }
@@ -1059,7 +1233,7 @@ impl ByteStreamWrite for LuaOpcode {
 
 impl ByteStreamWrite for LuaInstruction {
     fn write(&self, stream: &mut ByteStream) -> Result<(), ByteStreamError> {
-        LuaOpcode::write(&self.instruction, stream)?;
+        LuaLayout::write(&self.components, stream)?;
         Ok(())
     }
 }
