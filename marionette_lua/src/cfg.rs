@@ -180,20 +180,19 @@ pub fn add_edges(function: &LuaFunction, mut graph: Graph<LuaBlock, ()>) -> Resu
             None => continue,
         };
 
-        if last_instruction.pc + 1 >= function.code.len() as u64 {
-            continue;
-        } else {
-            if let Some(next) = find_block_by_start(&graph, last_instruction.pc as usize + 1) {
-                try_add_edge(&mut edges, current, next);
-            }
-        }
-
         let opcode = last_instruction.opcode();
         let is_branching = BRANCHING_OPCODES.contains(opcode);
         let is_possible_skip = POSSIBLE_SKIP_OPCODES.contains(opcode);
         let is_returning = RETURNING_OPCODES.contains(opcode);
 
         if !is_branching && !is_returning {
+            if last_instruction.pc + 1 >= function.code.len() as u64 {
+                continue;
+            } else {
+                if let Some(next) = find_block_by_start(&graph, last_instruction.pc as usize + 1) {
+                    try_add_edge(&mut edges, current, next);
+                }
+            }
             continue;
         }
 
@@ -201,7 +200,7 @@ pub fn add_edges(function: &LuaFunction, mut graph: Graph<LuaBlock, ()>) -> Resu
         let is_non_conditional_branching = NONCONDITIONAL_BRANCHING_OPCODES.contains(opcode);
         let is_backwards_conditional = BACKWARDS_CONDITIONAL_OPCODES.contains(opcode);
 
-        if is_conditional || is_non_conditional_branching || is_backwards_conditional {
+        if is_conditional || is_backwards_conditional {
             if let Some(jump_target) = last_instruction.jump_target {
                 if jump_target < function.code.len() {
                     if let Some(target) = find_block_by_start(&graph, jump_target) {
@@ -215,18 +214,20 @@ pub fn add_edges(function: &LuaFunction, mut graph: Graph<LuaBlock, ()>) -> Resu
                     try_add_edge(&mut edges, current, next);
                 }
             }
+        } else if is_non_conditional_branching {
+            if let Some(jump_target) = last_instruction.jump_target {
+                if jump_target < function.code.len() {
+                    if let Some(target) = find_block_by_start(&graph, jump_target) {
+                        try_add_edge(&mut edges, current, target);
+                    }
+                }
+            }
         } else if is_possible_skip {
             if let LuaOpcode::ABC(_, _, _, c) = last_instruction.instruction {
                 if c != 0 {
                     if last_instruction.pc + 2 < function.code.len() as u64 {
                         if let Some(target) = find_block_by_start(&graph, last_instruction.pc as usize + 2) {
                             try_add_edge(&mut edges, current, target);
-                        }
-                    }
-
-                    if last_instruction.pc + 1 < function.code.len() as u64 {
-                        if let Some(next) = find_block_by_start(&graph, last_instruction.pc as usize + 1) {
-                            try_add_edge(&mut edges, current, next);
                         }
                     }
                 }
