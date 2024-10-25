@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+lazy_static = "1.5.0"
+petgraph = "0.6.5"
 marionette_core = { path = "../marionette_core" }

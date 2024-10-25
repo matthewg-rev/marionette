@@ -1,9 +1,10 @@
 // Purpose: defines *code* regions for general purpose disassemblies.
 // src\structure\region.rs
 
+#[derive(PartialEq, Clone, Debug)]
 pub struct Range {
-    start: u64,
-    end: u64
+    pub start: u64,
+    pub end: u64
 }
 
 impl Range {

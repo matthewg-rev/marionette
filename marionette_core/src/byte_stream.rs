@@ -126,6 +126,48 @@ impl ByteStream {
         self.index
     }
 
+    /// Reads a byte from the byte stream.
+    pub fn read_byte(&mut self) -> Result<u8, ByteStreamError> {
+        if self.is_out_of_bounds(1) {
+            return Err(ByteStreamError::new(self, "Read byte out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
+        }
+
+        let byte = self.bytes[self.index];
+        self.history.push((self.index, 1));
+        self.index += 1;
+        Ok(byte)
+    }
+
+    /// Reads a number of bytes from the byte stream.
+    pub fn read_bytes(&mut self, size: usize) -> Result<Vec<u8>, ByteStreamError> {
+        if self.is_out_of_bounds(size) {
+            return Err(ByteStreamError::new(self, "Read bytes out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
+        }
+
+        let bytes = self.bytes[self.index..self.index + size].to_vec();
+        self.history.push((self.index, size));
+        self.index += size;
+        Ok(bytes)
+    }
+
+    /// Writes a byte to the byte stream.
+    pub fn write_byte(&mut self, byte: u8) -> Result<(), ByteStreamError> {
+        self.bytes.push(byte);
+        Ok(())
+    }
+
+    /// Writes a number of bytes to the byte stream.
+    pub fn write_bytes(&mut self, bytes: Vec<u8>) -> Result<(), ByteStreamError> {
+        self.bytes.extend(bytes);
+        Ok(())
+    }
+
+    /// Writes a number of bytes (slice) to the byte stream.
+    pub fn write_bytes_slice(&mut self, bytes: &[u8]) -> Result<(), ByteStreamError> {
+        self.bytes.extend(bytes);
+        Ok(())
+    }
+
     /// Returns the remaining bytes of the byte stream.
     /// 
     /// # Examples
@@ -161,6 +203,25 @@ impl ByteStream {
         }
     }
 
+    /// Peeks at the next byte(s) without moving the index.
+    pub fn peek(&mut self, size: usize) -> Result<Vec<u8>, ByteStreamError> {
+        if self.is_out_of_bounds(size) {
+            return Err(ByteStreamError::new(self, "Peek out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
+        }
+
+        Ok(self.bytes[self.index..self.index + size].to_vec())
+    }
+
+    /// Skip a number of bytes.
+    pub fn skip(&mut self, size: usize) -> Result<(), ByteStreamError> {
+        if self.is_out_of_bounds(size) {
+            return Err(ByteStreamError::new(self, "Skip out of bounds".to_string(), ByteStreamErrorType::OutOfBounds));
+        }
+
+        self.index += size;
+        Ok(())
+    }
+
     /// Adds an item to the context.
     pub fn add_context<T: 'static + std::any::Any>(&mut self, item: T) {
         self.context.push_back(Box::new(item));
@@ -176,6 +237,11 @@ impl ByteStream {
         }
 
         context
+    }
+
+    /// Clears the context.
+    pub fn clear_context(&mut self) {
+        self.context.clear();
     }
 }
 
